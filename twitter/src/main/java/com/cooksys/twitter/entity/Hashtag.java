@@ -12,7 +12,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "hashtag")
+//@Table(name = "hashtag")
 public class Hashtag {
 
 
@@ -20,16 +20,16 @@ public class Hashtag {
 	@GeneratedValue
 	private Integer id;
 	
-	@Column (name = "hashtag_label", nullable = false)
+	//@Column (name = "hashtag_label", nullable = false)
 	private String label;
 	
-	@Column (name = "firstUsed", nullable = false)
+	//@Column (name = "firstUsed", nullable = false)
 	private Timestamp firstUsed;
 	
-	@Column (name = "lastUsed", nullable = false)
+	//@Column (name = "lastUsed", nullable = false)
 	private Timestamp lastUsed;
 	
-	@ManyToMany
+	//@ManyToMany
 	private List<Tweet> tweets = new ArrayList<>();
 	
 	public Hashtag() {

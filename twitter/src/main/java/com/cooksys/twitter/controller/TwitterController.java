@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-
+import com.cooksys.twitter.Dto.HashtagDto;
+import com.cooksys.twitter.Dto.TweetDto;
 import com.cooksys.twitter.Dto.UserDto;
+import com.cooksys.twitter.entity.Context;
 import com.cooksys.twitter.entity.Credentials;
 import com.cooksys.twitter.entity.Hashtag;
 import com.cooksys.twitter.entity.Profile;
@@ -55,12 +57,12 @@ public class TwitterController {
 	}
 	
 	@GetMapping("/users")
-	public List<User> getAllUsers() {
+	public UserDto[] getAllUsers() {
 		return twitterService.getAllActiveUsers();
 	}
 	
 	@PostMapping("/users")
-	public User addUser(@RequestBody Credentials credentials, @RequestBody Profile profile, HttpServletResponse response) {
+	public UserDto addUser(@RequestBody Credentials credentials, @RequestBody Profile profile, HttpServletResponse response) {
 		try {
 			return twitterService.addUser(credentials, profile);
 		} catch (InvalidIdException e) {
@@ -69,7 +71,7 @@ public class TwitterController {
 	}
 	
 	@GetMapping("/users/{username}")
-	public User getUsername(@PathVariable String username) {
+	public UserDto getUsername(@PathVariable String username) {
 		
 		try {
 				return twitterService.getUsername(username);
@@ -81,13 +83,13 @@ public class TwitterController {
 	}
 
 	@PatchMapping("/users/{username}")
-	public User updateUser(@PathVariable String username, @RequestBody User user) throws InvalidIdException {
+	public UserDto updateUser(@PathVariable String username, @RequestBody User user) throws InvalidIdException {
 		return twitterService.updateUserProfile(user.getCredentials(), user.getProfile());
 	}
 	
 	//delete user
 	@DeleteMapping("/users/{username}")
-	public User deleteUser(@PathVariable String username, @RequestBody Credentials credentials) throws InvalidIdException {
+	public UserDto deleteUser(@PathVariable String username, @RequestBody Credentials credentials) throws InvalidIdException {
 		return twitterService.deleteUser(credentials);
 	}
 	
@@ -102,12 +104,12 @@ public class TwitterController {
 	}
 	
 	@GetMapping("/users/{username}/feed")
-	public List<Tweet> getFeed(@PathVariable String username) throws InvalidIdException {
+	public List<TweetDto> getFeed(@PathVariable String username) throws InvalidIdException {
 		return twitterService.getFeed(username);
 	}
 	
 	@GetMapping("/users/{username}/tweets")
-	public List<Tweet> getTweets(@RequestParam String username) throws InvalidIdException {
+	public List<TweetDto> getTweets(@RequestParam String username) throws InvalidIdException {
 		return twitterService.getTweets(username);
 	}
 	
@@ -117,43 +119,43 @@ public class TwitterController {
 	}
 	
 	@GetMapping("/users/{username}/followers")
-	public List<User> getFollowers(@RequestParam String username) throws InvalidIdException {
+	public List<UserDto> getFollowers(@RequestParam String username) throws InvalidIdException {
 		return twitterService.getFollowers(username);
 	}
 	
 	@GetMapping("/users/{username}/following")
-	public List<User> getFollowing(@PathVariable String username) throws InvalidIdException {
+	public List<UserDto> getFollowing(@PathVariable String username) throws InvalidIdException {
 		return twitterService.getFollowing(username);
 	}
 	
 	@GetMapping("/tags")
-	public List<Hashtag> getAllHashtags(){
+	public List<HashtagDto> getAllHashtags(){
 		return twitterService.getHashtags();
 	}
 	
 	@GetMapping("/tags/{label}")
-	public List<Tweet> getTagged(@PathVariable String label) throws InvalidIdException {
+	public List<TweetDto> getTagged(@PathVariable String label) throws InvalidIdException {
 		return twitterService.getTagged(label);
 	}
 	
 	@GetMapping("/tweets")
-	public List<Tweet> getAllTweets(){
+	public List<TweetDto> getAllTweets(){
 		return twitterService.getAllTweets();
 	}
 	
 	@PostMapping("/tweets")
-	public Tweet postTweet(@RequestBody String content, @RequestBody Credentials credentials) throws InvalidIdException {
+	public TweetDto postTweet(@RequestBody String content, @RequestBody Credentials credentials) throws InvalidIdException {
 		return twitterService.postNewTweet(content, credentials);
 	}
 	
 	@GetMapping("/tweets/{id}")
-	public Tweet getTweet(@PathVariable String id) throws InvalidIdException {
+	public TweetDto getTweet(@PathVariable String id) throws InvalidIdException {
 		return twitterService.getTweet(Integer.parseInt(id));
 	}
 	
 	//delete tweet
 	@DeleteMapping("/{id}")
-	public Tweet deleteTweet(@PathVariable String id, @RequestBody Credentials credentials) throws InvalidIdException {
+	public TweetDto deleteTweet(@PathVariable String id, @RequestBody Credentials credentials) throws InvalidIdException {
 		return twitterService.deleteUserTweet(Integer.parseInt(id), credentials);		
 	}
 	
@@ -163,22 +165,42 @@ public class TwitterController {
 	}
 	
 	@PostMapping("/tweets/{id}/reply")
-	public Tweet replyTweet(@PathVariable String id, @RequestBody String content, @RequestBody Credentials credentials) throws InvalidIdException {
+	public TweetDto replyTweet(@PathVariable String id, @RequestBody String content, @RequestBody Credentials credentials) throws InvalidIdException {
 		return twitterService.reply(Integer.parseInt(id), content, credentials);
 	}
 	
 	@PostMapping("/tweets/{id}/repost")
-	public Tweet repostTweet(@PathVariable String id, @RequestBody Credentials credentials) throws InvalidIdException {
+	public TweetDto repostTweet(@PathVariable String id, @RequestBody Credentials credentials) throws InvalidIdException {
 		return twitterService.repostTweet(Integer.parseInt(id), credentials);
 	}
 	
 	@GetMapping("/tweets/{id}/tags")
-	public List<Hashtag> userTaggedTweet(@PathVariable String id) {
-		return null;
+	public List<HashtagDto> userTaggedTweet(@PathVariable String id) throws InvalidIdException {
+		return twitterService.userTaggedTweets(Integer.parseInt(id));
 	}
 	
 	@GetMapping("/tweets/{id}/likes")
-	public List<UserDto> usersLiked(@PathVariable String tweets, @RequestParam Integer id) {
+	public List<UserDto> usersLiked(@PathVariable String id) throws InvalidIdException {
+		return twitterService.usersLiked(Integer.parseInt(id));
+	}
+	
+	@GetMapping("/tweets/{id}/context")
+	public Context tweetContext(@PathVariable String id) throws InvalidIdException {
+		return twitterService.tweetContext(Integer.parseInt(id));
+	}
+	
+	@GetMapping("/tweets/{id}/replies")
+	public List<Tweet> userReplies(@PathVariable String id) throws InvalidIdException {
+		return twitterService.userReplies(Integer.parseInt(id));
+	}
+	
+	@GetMapping("/tweets/{id}/reposts")
+	public Context userReposts(@PathVariable String id) {
+		return null;
+	}
+	
+	@GetMapping("/tweets/{id}/mentions")
+	public Context userMentions(@PathVariable String id) {
 		return null;
 	}
 }

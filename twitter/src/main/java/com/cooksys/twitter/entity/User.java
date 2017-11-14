@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.Column;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -12,22 +13,22 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 @Entity 
-@Table(name = "user_table")
+//@Table(name = "user_table")
 public class User {
 	
 	@Id
 	@GeneratedValue
 	private Integer id;
 	
-	@Column(name = "username", nullable = false)
+	//@Column(name = "username", nullable = false)
 	private String username;
 	
-	@OneToOne
+	@Embedded
 	private Profile profile;
 	
 	private Timestamp joined;
 	
-	@Column(name = "status", nullable = false)
+	//@Column(name = "status", nullable = false)
 	private boolean status; // true if user is active, false if user is "deleted"
 	
 	private Credentials credentials;
@@ -41,6 +42,11 @@ public class User {
 	private List<Tweet> allTweets = new ArrayList<>();
 	
 	private List<Tweet> mentions = new ArrayList<>();
+	
+	
+	public User() {
+		
+	}
 	
 	public User(String username, Profile profile, Timestamp timestamp, Credentials credentials) {
 		this.username = username;
@@ -99,9 +105,6 @@ public class User {
 		this.mentions = mentions;
 	}
 
-	public User() {
-		
-	}
 	
 	public boolean isStatus() {
 		return status;

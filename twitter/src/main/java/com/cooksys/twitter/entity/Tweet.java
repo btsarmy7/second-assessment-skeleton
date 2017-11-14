@@ -12,7 +12,7 @@ import javax.persistence.Table;
 
 
 @Entity
-@Table(name = "tweet")
+//@Table(name = "tweet")
 public class Tweet {
 
 	@Id
@@ -21,16 +21,16 @@ public class Tweet {
 	
 	private User author;
 	
-	@Column(name = "posted", nullable = false)
+	//@Column(name = "posted", nullable = false)
 	private Timestamp posted;
 	
-	@Column(name = "content")
+	//@Column(name = "content")
 	private String content;
 	
 	private Tweet inReplyto;
 	private Tweet repostOf;
 	
-	@Column(name = "deleted")
+	//@Column(name = "deleted")
 	private boolean deleted; // keeps track of whether tweet is deleted 
 	
 	

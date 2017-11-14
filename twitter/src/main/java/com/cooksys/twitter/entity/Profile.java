@@ -1,13 +1,14 @@
 package com.cooksys.twitter.entity;
 
 import javax.persistence.Column;
+import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-@Entity
-@Table(name = "profile")
+@Embeddable
+//@Table(name = "profile")
 public class Profile {
 
 	@Id
@@ -17,9 +18,13 @@ public class Profile {
 	private String firstName;
 	private String lastName;
 	
-	@Column(nullable = false)
+	//@Column(nullable = false)
 	private String email;
 	private String phone;
+	
+	public Profile() {
+		
+	}
 
 	public Integer getId() {
 		return id;

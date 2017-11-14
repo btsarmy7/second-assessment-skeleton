@@ -2,12 +2,19 @@ package com.cooksys.twitter.entity;
 
 import java.util.List;
 
+import javax.persistence.Entity;
+
+@Entity
 public class Context {
 
 	private Integer id;
 	private Tweet target;
 	private List<Tweet> before;
 	private List<Tweet> after;
+	
+	public Context() {
+		
+	}
 	
 	public Integer getId() {
 		return id;

@@ -5,18 +5,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
+import com.cooksys.twitter.Dto.HashtagDto;
+import com.cooksys.twitter.Dto.TweetDto;
+import com.cooksys.twitter.Dto.UserDto;
+import com.cooksys.twitter.entity.Context;
 import com.cooksys.twitter.entity.Credentials;
 import com.cooksys.twitter.entity.Hashtag;
 import com.cooksys.twitter.entity.Profile;
 import com.cooksys.twitter.entity.Tweet;
 import com.cooksys.twitter.entity.User;
 import com.cooksys.twitter.exceptions.InvalidIdException;
+import com.cooksys.twitter.mapper.HashtagMapper;
+import com.cooksys.twitter.mapper.TweetMapper;
+import com.cooksys.twitter.mapper.UserMapper;
 import com.cooksys.twitter.repository.HashtagRepository;
 import com.cooksys.twitter.repository.TweetRepository;
 import com.cooksys.twitter.repository.UserRepository;
@@ -28,12 +37,20 @@ public class TwitterService {
 	private UserRepository userRepository;
 	private TweetRepository tweetRepository;
 	
-	public TwitterService(HashtagRepository hashtagRepository,
-			UserRepository userRepository, TweetRepository tweetRepository) {
+	private UserMapper userMapper;
+	private TweetMapper tweetMapper;
+	private HashtagMapper hashtagMapper;
+	
+	public TwitterService(HashtagRepository hashtagRepository, UserRepository userRepository, 
+			TweetRepository tweetRepository, UserMapper userMapper, TweetMapper tweetMapper, HashtagMapper hashtagMapper) {
 		
 		this.hashtagRepository = hashtagRepository;
 		this.userRepository = userRepository;
 		this.tweetRepository = tweetRepository;
+		this.userMapper = userMapper;
+		this.tweetMapper = tweetMapper;
+		this.hashtagMapper = hashtagMapper;
+		
 	}
 	
 	
@@ -61,48 +78,49 @@ public class TwitterService {
 			return true;
 	}
 
-	public List<User> getAllActiveUsers() {
-		return null;
-		/*UserDto[] allUsers = new UserDto[userRepository.findAll().size()];
-		List<UserDto> allUserDtos = userRepository.findAll().stream().map(UserMapper::toUserDto).collect(Collectors.toList());
+	public UserDto[] getAllActiveUsers() {
+		UserDto[] allUsers = new UserDto[userRepository.findByStatusTrue().size()];
+		List<UserDto> allUserDtos = userRepository.findByStatusTrue().stream().map(userMapper::toUserDto).collect(Collectors.toList());
 		for(int i = 0; i < userRepository.findAll().size(); i++) {
-			allUsers[i] = toUserDto(allUserDtos.get(i));
+			allUsers[i] = allUserDtos.get(i);
 		}
-		
-		return  userRepository.findByStatusTrue().stream().map(UserMapper::toUserDto).collect(Collectors.toList());
-		//return allUsers;*/
+		return allUsers;
 	}
 
 	@Transactional
-	public User addUser(Credentials credentials, Profile profile) throws InvalidIdException {
+	public UserDto addUser(Credentials credentials, Profile profile) throws InvalidIdException {
 		if(availableUsername(credentials.getUsername())) {
 			User user = new User(credentials.getUsername(), profile, new Timestamp(System.currentTimeMillis()), credentials);
-			return userRepository.saveAndFlush(user);
+			userRepository.saveAndFlush(user);
+			return userMapper.toUserDto(user);
 		}throw new InvalidIdException("Username not available");
+		
 		
 	}
 
-	public User getUsername(String username) throws InvalidIdException {
+	public UserDto getUsername(String username) throws InvalidIdException {
 		
-		if(!availableUsername(username))
-			return userRepository.findby_username(username);
-		throw new InvalidIdException("User does not exist");
+		if(!availableUsername(username)) {
+			User user = userRepository.findby_username(username);
+			return userMapper.toUserDto(user);
+		}throw new InvalidIdException("User does not exist");
 		
 	}
 
 	@Transactional
-	public User updateUserProfile(Credentials credentials, Profile profile) throws InvalidIdException {
+	public UserDto updateUserProfile(Credentials credentials, Profile profile) throws InvalidIdException {
 		
 		if(isUsername(credentials.getUsername())) {
 			User user = userRepository.findby_username(credentials.getUsername());
 			user.setProfile(profile);
-			return userRepository.saveAndFlush(user);
+			User updatedUser = userRepository.saveAndFlush(user);
+			return userMapper.toUserDto(updatedUser);
 		} throw new InvalidIdException("User does not exist");
 		
 	}
 
 	@Transactional
-	public User deleteUser(Credentials credentials) throws InvalidIdException {
+	public UserDto deleteUser(Credentials credentials) throws InvalidIdException {
 		
 		if (isUsername(credentials.getUsername())) {
 			User user = userRepository.findby_username(credentials.getUsername());
@@ -113,7 +131,7 @@ public class TwitterService {
 				t.setDeleted(true);
 				tweetRepository.saveAndFlush(t);
 			}
-			return user;
+			return userMapper.toUserDto(user);
 		} throw new InvalidIdException("User does not exist");
 		
 	}
@@ -146,7 +164,7 @@ public class TwitterService {
 	}
 
 
-	public List<Tweet> getFeed(String username) throws InvalidIdException {
+	public List<TweetDto> getFeed(String username) throws InvalidIdException {
 		
 		if(isUsername(username)) {
 			User user = userRepository.findby_username(username);
@@ -154,15 +172,16 @@ public class TwitterService {
 			for(User f : user.getFollowing()) {
 				userFeed.addAll(f.getAllTweets());
 			}
-			//userFeed.sort((o1, o2)-> o1.compareTo(o2));
-			return userFeed;
+			return userFeed.stream().map(tweetMapper::toTweetDto).collect(Collectors.toList());
+			
 		} throw new InvalidIdException("User does not exist");
 		
 	}
 
 
-	public List<Tweet> getTweets(String username) throws InvalidIdException{
-		return userRepository.findby_username(username).getAllTweets();
+	public List<TweetDto> getTweets(String username) throws InvalidIdException{
+		List<Tweet> allTweets = userRepository.findby_username(username).getAllTweets();
+		return allTweets.stream().map(tweetMapper :: toTweetDto).collect(Collectors.toList());
 		
 	}
 
@@ -177,43 +196,43 @@ public class TwitterService {
 	}
 
 
-	public List<User> getFollowers(String username) throws InvalidIdException {
+	public List<UserDto> getFollowers(String username) throws InvalidIdException {
 		
 		if(isUsername(username)) {
 			User user = userRepository.findby_username(username);
-			return user.getFollowers();
+			return user.getFollowers().stream().map(userMapper :: toUserDto).collect(Collectors.toList());
 		}throw new InvalidIdException("Not a user");
 		
 	}
 
 
-	public List<User> getFollowing(String username) throws InvalidIdException {
+	public List<UserDto> getFollowing(String username) throws InvalidIdException {
 		if(isUsername(username)) {
 			User user = userRepository.findby_username(username);
-			return user.getFollowing();
+			return user.getFollowing().stream().map(userMapper :: toUserDto).collect(Collectors.toList());
 		} throw new InvalidIdException("Not a user");
 	}
 
 
-	public List<Hashtag> getHashtags() {
-		return hashtagRepository.findAll();
+	public List<HashtagDto> getHashtags() {
+		return hashtagRepository.findAll().stream().map(hashtagMapper :: toHashtagDto).collect(Collectors.toList());
 	}
 
 
-	public List<Tweet> getTagged(String label) throws InvalidIdException {
+	public List<TweetDto> getTagged(String label) throws InvalidIdException {
 		if(hashtagRepository.findByHashtag(label) != null) {
 		Hashtag h = hashtagRepository.findByHashtag(label);
-		return h.getTweets();
+		return h.getTweets().stream().map(tweetMapper :: toTweetDto).collect(Collectors.toList());
 		}throw new InvalidIdException("Not a hashtag");
 	}
 
 
-	public List<Tweet> getAllTweets() {
-		return tweetRepository.findAll();
+	public List<TweetDto> getAllTweets() {
+		return tweetRepository.findAll().stream().map(tweetMapper :: toTweetDto).collect(Collectors.toList());
 	}
 
 
-	public Tweet postNewTweet(String content, Credentials credentials) throws InvalidIdException {
+	public TweetDto postNewTweet(String content, Credentials credentials) throws InvalidIdException {
 		
 		if(isUsername(credentials.getUsername())) {
 			User user = userRepository.findby_username(credentials.getUsername());
@@ -225,7 +244,7 @@ public class TwitterService {
 			tweetRepository.saveAndFlush(newTweet);
 			user.getAllTweets().add(newTweet);
 			userRepository.saveAndFlush(user);
-			return newTweet;
+			return tweetMapper.toTweetDto(newTweet);
 		}throw new InvalidIdException("Not a valid user, cannot post new tweet");
 		
 		
@@ -269,19 +288,20 @@ public class TwitterService {
 	}
 
 
-	public Tweet getTweet(Integer id) throws InvalidIdException {
+	public TweetDto getTweet(Integer id) throws InvalidIdException {
 		
 		if(tweetRepository.findByIdAndDeletedFalse(id) != null) {
 			Tweet tweet = tweetRepository.findById(id);
-			if(tweet != null) 
-				return tweet;
+			if(tweet != null) { 
+				return tweetMapper.toTweetDto(tweet);
+			}
 		}throw new InvalidIdException("No such tweet");
 	
 	}
 
-	public Tweet deleteUserTweet(Integer id, Credentials credentials) throws InvalidIdException {
+	public TweetDto deleteUserTweet(Integer id, Credentials credentials) throws InvalidIdException {
 		
-		Tweet tweet = getTweet(id);
+		Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
 		if(tweet == null) {
 			throw new InvalidIdException("No such tweet");
 		}
@@ -289,13 +309,13 @@ public class TwitterService {
 			throw new InvalidIdException("Not author of tweet");
 		}
 		tweet.setDeleted(true);
-		return tweet;
+		return tweetMapper.toTweetDto(tweet);
 	}
 
 
 	public void likedTweets(Integer id, Credentials credentials) throws InvalidIdException {
 		
-		Tweet tweet = getTweet(id);
+		Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
 		User user = userRepository.findby_username(credentials.getUsername());
 		if(user == null) {
 			throw new InvalidIdException("Not a user");
@@ -307,7 +327,7 @@ public class TwitterService {
 	}
 
 
-	public Tweet reply(Integer id, String content, Credentials credentials) throws InvalidIdException {
+	public TweetDto reply(Integer id, String content, Credentials credentials) throws InvalidIdException {
 		
 		if(!isUsername(credentials.getUsername())) {
 			throw new InvalidIdException("Not a valid user");
@@ -317,29 +337,60 @@ public class TwitterService {
 		newTweet.setDeleted(false);
 		newTweet.setHashtags(findContentHashtags(newTweet));
 		tweetRepository.saveAndFlush(newTweet);
-		Tweet tweet = getTweet(id);
+		Tweet tweet = tweetMapper.toTweet(getTweet(id));
 		tweet.setInReplyto(newTweet);
 		tweetRepository.saveAndFlush(tweet);
-		return newTweet;
+		return tweetMapper.toTweetDto(newTweet);
 				
 	}
 
 
-	public Tweet repostTweet(Integer id, Credentials credentials) throws InvalidIdException {
+	public TweetDto repostTweet(Integer id, Credentials credentials) throws InvalidIdException {
 		
 		if(!isUsername(credentials.getUsername())) {
 			throw new InvalidIdException("Not a valid user");
 		}
 		User user = userRepository.findby_username(credentials.getUsername());
-		Tweet originalTweet = getTweet(id);
+		Tweet originalTweet = tweetMapper.toTweet(getTweet(id));
 		Tweet repost = new Tweet(user, new Timestamp(System.currentTimeMillis()), null);
 		repost.setDeleted(false);
 		repost.setRepostOf(originalTweet);
 		tweetRepository.saveAndFlush(repost);
-		return repost;
+		return tweetMapper.toTweetDto(repost);
 		
 	}
-	
+
+	public List<HashtagDto> userTaggedTweets(Integer id) throws InvalidIdException {
+		if(tweetRepository.findByIdAndDeletedFalse(id) == null)
+			throw new InvalidIdException("Not an existing tweet");
+		else {
+			Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
+			return tweet.getHashtags().stream().map(hashtagMapper :: toHashtagDto).collect(Collectors.toList());
+			}
+	}
+
+
+	public List<UserDto> usersLiked(Integer id) throws InvalidIdException {
+		 if(tweetRepository.findByIdAndDeletedFalse(id) == null )
+			 throw new InvalidIdException("Not an existing tweet");
+		 else {
+			 Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
+			 return tweet.getLikes().stream().map(userMapper :: toUserDto).collect(Collectors.toList());
+		 }
+	}
+
+
+	public Context tweetContext(Integer id) throws InvalidIdException {
+		if(tweetRepository.findByIdAndDeletedFalse(id) == null )
+			 throw new InvalidIdException("Not an existing tweet");
+		return null;
+	}
+
+
+	public List<Tweet> userReplies(Integer id) throws InvalidIdException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 	
 	

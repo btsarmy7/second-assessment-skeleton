@@ -7,19 +7,23 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "credentials")
+//@Table(name = "credentials")
 public class Credentials {
 
 	@Id
 	@GeneratedValue
 	private Integer id;
 	
-	@Column(nullable = false)
+	//@Column(nullable = false)
 	//@OneToOne
 	private String username;
 	
-	@Column(nullable = false)
+	//@Column(nullable = false)
 	private String password;
+	
+	public Credentials() {
+		
+	}
 
 	public Integer getId() {
 		return id;
