@@ -27,19 +27,28 @@ public class User {
 	
 	private Timestamp joined;
 	
+	@Column(name = "status", nullable = false)
 	private boolean status; // true if user is active, false if user is "deleted"
 	
 	private Credentials credentials;
 	
-	private List<Tweet> likedTweets;
+	private List<Tweet> likedTweets = new ArrayList<>();
 	
 	private List<User> followers = new ArrayList<>();
 	
 	private List<User> following = new ArrayList<>();
 	
-	private List<Tweet> allTweets;
+	private List<Tweet> allTweets = new ArrayList<>();
 	
-	private List<Tweet> mentions;
+	private List<Tweet> mentions = new ArrayList<>();
+	
+	public User(String username, Profile profile, Timestamp timestamp, Credentials credentials) {
+		this.username = username;
+		this.profile = profile;
+		this.joined = timestamp;
+		this.credentials = credentials;
+		this.status = true;
+	}
 	
 	
 	public Credentials getCredentials() {

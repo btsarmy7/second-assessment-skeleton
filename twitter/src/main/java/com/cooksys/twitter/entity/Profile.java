@@ -1,10 +1,13 @@
 package com.cooksys.twitter.entity;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import javax.persistence.Table;
 
-
+@Entity
+@Table(name = "profile")
 public class Profile {
 
 	@Id
@@ -13,11 +16,10 @@ public class Profile {
 	
 	private String firstName;
 	private String lastName;
+	
+	@Column(nullable = false)
 	private String email;
 	private String phone;
-	
-	@OneToOne
-	private User user;
 
 	public Integer getId() {
 		return id;
@@ -59,13 +61,6 @@ public class Profile {
 		this.phone = phone;
 	}
 
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
-	}
 
 	@Override
 	public int hashCode() {

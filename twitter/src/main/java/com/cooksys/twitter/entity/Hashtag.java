@@ -1,16 +1,20 @@
 package com.cooksys.twitter.entity;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 
 @Entity
 @Table(name = "hashtag")
 public class Hashtag {
+
 
 	@Id
 	@GeneratedValue
@@ -25,6 +29,8 @@ public class Hashtag {
 	@Column (name = "lastUsed", nullable = false)
 	private Timestamp lastUsed;
 	
+	@ManyToMany
+	private List<Tweet> tweets = new ArrayList<>();
 	
 	public Hashtag() {
 		
@@ -60,6 +66,14 @@ public class Hashtag {
 	
 	public void setLastUsed(Timestamp lastUsed) {
 		this.lastUsed = lastUsed;
+	}
+	
+	public List<Tweet> getTweets() {
+		return tweets;
+	}
+
+	public void setTweets(List<Tweet> tweets) {
+		this.tweets = tweets;
 	}
 
 	@Override

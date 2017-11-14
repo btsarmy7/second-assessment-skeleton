@@ -1,18 +1,24 @@
 package com.cooksys.twitter.entity;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "credentials")
 public class Credentials {
 
 	@Id
 	@GeneratedValue
 	private Integer id;
 	
-	@OneToOne
+	@Column(nullable = false)
+	//@OneToOne
 	private String username;
 	
+	@Column(nullable = false)
 	private String password;
 
 	public Integer getId() {

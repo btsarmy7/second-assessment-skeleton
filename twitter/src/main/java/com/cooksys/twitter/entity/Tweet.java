@@ -4,25 +4,55 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.OneToOne;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
+
+@Entity
+@Table(name = "tweet")
 public class Tweet {
 
+	@Id
+	@GeneratedValue()
 	private Integer id;
 	
-	@OneToOne
 	private User author;
+	
+	@Column(name = "posted", nullable = false)
 	private Timestamp posted;
+	
+	@Column(name = "content")
 	private String content;
+	
 	private Tweet inReplyto;
 	private Tweet repostOf;
+	
+	@Column(name = "deleted")
 	private boolean deleted; // keeps track of whether tweet is deleted 
+	
 	
 	private List<User> likes = new ArrayList<>();
 	
-	List<Hashtag> hashtags;
-	
+	private List<Hashtag> hashtags = new ArrayList<>();
+
 	private List<User> mentions = new ArrayList<>();
+	
+	//private List<Tweet> replies = new ArrayList<>();
+	
+	//private List<Tweet> reposts = new ArrayList<>();
+	
+	public Tweet() {
+		
+	}
+	
+	public Tweet(User author, Timestamp posted, String content) {
+		this.author = author;
+		this.posted = posted;
+		this.content = content;
+	}
 	
 	public boolean isDeleted() {
 		return deleted;
@@ -105,6 +135,30 @@ public class Tweet {
 		this.repostOf = repostOf;
 	}
 	
+	
+	public List<User> getLikes() {
+		return likes;
+	}
+
+	public void setLikes(List<User> likes) {
+		this.likes = likes;
+	}
+
+	public List<Hashtag> getHashtags() {
+		return hashtags;
+	}
+
+	public void setHashtags(List<Hashtag> hashtags) {
+		this.hashtags = hashtags;
+	}
+
+	public List<User> getMentions() {
+		return mentions;
+	}
+
+	public void setMentions(List<User> mentions) {
+		this.mentions = mentions;
+	}
 	
 	
 }

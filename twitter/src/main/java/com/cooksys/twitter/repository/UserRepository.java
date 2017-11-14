@@ -8,13 +8,13 @@ import com.cooksys.twitter.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
 	
-	User findby_username(String username);
+	public User findby_username(String username);
 
-	List<User> findByStatusTrue(); // list of all active users
+	public List<User> findByStatusTrue(); // list of all active users
 	
-	User findByUsernameAndStatusFalse(String username); // find "deleted" user
+	public User findByUsernameAndStatusFalse(String username); // find "deleted" user
 	
-	User findByUsernameAndStatusTrue(String username); // find active user
+	public User findByUsernameAndStatusTrue(String username); // find active user
 
 	
 }
