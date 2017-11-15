@@ -1,6 +1,6 @@
 package com.cooksys.twitter.repository;
 
-import java.util.Collection;
+
 import java.util.List;
 import java.util.Set;
 

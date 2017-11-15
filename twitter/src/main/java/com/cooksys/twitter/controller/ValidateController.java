@@ -64,39 +64,60 @@ public class ValidateController {
 		hashtagService.create("whereIsBangtan");
 		hashtagService.create("RM");
 		hashtagService.create("BTSAMAs");
+		hashtagService.create("DNA");
 		
 		Credentials jjk = new Credentials("kookie", "overwatch");
 		Credentials kth = new Credentials("vante", "photography");
 		Credentials pjm = new Credentials("chimchim", "calicoCat");
 		Credentials jhs = new Credentials("jayhope", "hobi");
+		Credentials myg = new Credentials("suga", "piano");
+		Credentials ksj = new Credentials("worldwideHandsome", "my face");
+		Credentials knj = new Credentials("RM", "notRapMonsterAnymore");
 		
-		Profile p1 = new Profile();
-		Profile p2 = new Profile();
-		Profile p3 = new Profile();
-		Profile p4 = new Profile();
+		Profile maknae = new Profile();
+		Profile fourD = new Profile();
+		Profile mochi = new Profile();
+		Profile hope = new Profile();
+		Profile genius = new Profile();
+		Profile visual = new Profile();
+		Profile leader = new Profile();
 
-		p1.setEmail("kookie@gmail.com");
-		p1.setFirstName("Jungkook");
-		p1.setLastName("Jeon");
-		p1.setPhone("585858585");
-		p2.setEmail("chimchim@gmail.com");
-		p2.setFirstName("Jimin");
-		p2.setLastName("Park");
-		p2.setPhone("1310131013");
-		p3.setEmail("vante@gmail.com");
-		p3.setFirstName("Taehyung");
-		p3.setLastName("Kim");
-		p3.setPhone("123437264");
-		p4.setEmail("jayHope@gmail.com");
-		p4.setFirstName("Hoseok");
-		p4.setLastName("Jung");
-		p4.setPhone("1658745314");
-
-		userService.create(true, jjk, p1);
-		userService.create(pjm, p2);
-		userService.create(kth, p3);
-		userService.create(true, jhs, p4);
+		maknae.setEmail("goldenKookie@gmail.com");
+		maknae.setFirstName("Jungkook");
+		maknae.setLastName("Jeon");
+		maknae.setPhone("585858585");
+		mochi.setEmail("chimchim@gmail.com");
+		mochi.setFirstName("Jimin");
+		mochi.setLastName("Park");
+		mochi.setPhone("1310131013");
+		fourD.setEmail("vante@gmail.com");
+		fourD.setFirstName("Taehyung");
+		fourD.setLastName("Kim");
+		fourD.setPhone("123437264");
+		hope.setEmail("jayHope@gmail.com");
+		hope.setFirstName("Hoseok");
+		hope.setLastName("Jung");
+		hope.setPhone("1658745314");
+		genius.setEmail("agustD@gmail.com");
+		genius.setFirstName("Yoongi");
+		genius.setLastName("Min");
+		genius.setPhone("321474623");
+		visual.setEmail("mrWWH@gmail.com");
+		visual.setFirstName("Seokjin");
+		visual.setLastName("Kim");
+		visual.setPhone("3716429842");
+		leader.setEmail("iLoveRyan@gmail.com");
+		leader.setFirstName("Namjoon");
+		leader.setLastName("Kim");
+		leader.setPhone("127364724");
 		
+		userService.create(true, jjk, maknae);
+		userService.create(pjm, mochi);
+		userService.create(kth, fourD);
+		userService.create(true, jhs, hope);
+		userService.create(myg, genius);
+		userService.create(ksj, visual);
+		userService.create(true, knj, leader);
 
 	}
 

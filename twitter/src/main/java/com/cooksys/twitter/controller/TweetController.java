@@ -51,8 +51,8 @@ public class TweetController {
 	public TweetDto postTweet(@RequestBody TweetData tweetData, HttpServletResponse response) throws IOException{
 		try {
 				return tweetService.createSimpleTweet(tweetData);
-			} catch( InvalidIdException e ) {
-				response.sendError(e.BAD_REQ, "Invalid Tweet Data");
+			} catch( InvalidIdException e) {
+				response.sendError(InvalidIdException.BAD_REQ, "Invalid Tweet Data");
 				return null;
 			}
 		}
