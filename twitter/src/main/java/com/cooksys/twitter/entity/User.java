@@ -4,23 +4,24 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Column;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
+
+import com.cooksys.twitter.embedded.Credentials;
+import com.cooksys.twitter.embedded.Profile;
+
 
 @Entity 
-//@Table(name = "user_table")
 public class User {
 	
 	@Id
 	@GeneratedValue
 	private Integer id;
 	
-	//@Column(name = "username", nullable = false)
 	private String username;
 	
 	@Embedded
@@ -28,19 +29,24 @@ public class User {
 	
 	private Timestamp joined;
 	
-	//@Column(name = "status", nullable = false)
 	private boolean status; // true if user is active, false if user is "deleted"
 	
+	@Embedded
 	private Credentials credentials;
 	
+	@ManyToMany
 	private List<Tweet> likedTweets = new ArrayList<>();
-	
+	    
+	@ManyToMany
 	private List<User> followers = new ArrayList<>();
 	
+	@ManyToMany(mappedBy = "followers")
 	private List<User> following = new ArrayList<>();
 	
+	@OneToMany(mappedBy = "author")
 	private List<Tweet> allTweets = new ArrayList<>();
 	
+	@ManyToMany(mappedBy = "mentions")
 	private List<Tweet> mentions = new ArrayList<>();
 	
 	
@@ -169,6 +175,13 @@ public class User {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", username=" + username + ", profile=" + profile + ", joined=" + joined + ", status="
+				+ status + ", credentials=" + credentials + ", likedTweets=" + likedTweets + ", followers=" + followers
+				+ ", following=" + following + ", allTweets=" + allTweets + ", mentions=" + mentions + "]";
 	}
 	
 	

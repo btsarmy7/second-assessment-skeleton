@@ -2,7 +2,11 @@ package com.cooksys.twitter.Dto;
 
 import java.sql.Timestamp;
 
-import com.cooksys.twitter.entity.Profile;
+import javax.persistence.Embedded;
+
+import com.cooksys.twitter.embedded.Credentials;
+import com.cooksys.twitter.embedded.Profile;
+
 
 public class UserDto {
 	
@@ -10,11 +14,15 @@ public class UserDto {
 	
 	private String username;
 
+	@Embedded
 	private Profile profile;
 	
 	private Timestamp joined;
 	
 	private boolean status;
+	
+	@Embedded 
+	private Credentials credentials;
 
 	public Integer getId() {
 		return id;
@@ -54,6 +62,14 @@ public class UserDto {
 
 	public void setStatus(boolean status) {
 		this.status = status;
+	}
+
+	public Credentials getCredentials() {
+		return credentials;
+	}
+
+	public void setCredentials(Credentials credentials) {
+		this.credentials = credentials;
 	}
 	
 	

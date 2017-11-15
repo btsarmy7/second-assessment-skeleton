@@ -4,15 +4,13 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
-import javax.persistence.Table;
+
 
 @Entity
-//@Table(name = "hashtag")
 public class Hashtag {
 
 
@@ -20,16 +18,13 @@ public class Hashtag {
 	@GeneratedValue
 	private Integer id;
 	
-	//@Column (name = "hashtag_label", nullable = false)
 	private String label;
 	
-	//@Column (name = "firstUsed", nullable = false)
 	private Timestamp firstUsed;
 	
-	//@Column (name = "lastUsed", nullable = false)
 	private Timestamp lastUsed;
 	
-	//@ManyToMany
+	@ManyToMany(mappedBy = "hashtags")
 	private List<Tweet> tweets = new ArrayList<>();
 	
 	public Hashtag() {
@@ -99,6 +94,12 @@ public class Hashtag {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Hashtag [id=" + id + ", label=" + label + ", firstUsed=" + firstUsed + ", lastUsed=" + lastUsed
+				+ ", tweets=" + tweets + "]";
 	}
 	
 	

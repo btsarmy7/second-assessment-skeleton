@@ -7,7 +7,7 @@ import com.cooksys.twitter.entity.Hashtag;
 
 public interface HashtagRepository extends JpaRepository<Hashtag, Integer> {
 
-	Hashtag findByHashtag(String Hashtag);
+	Hashtag findByLabel(String Hashtag);
 	
 	List<Hashtag> findAll();
 }

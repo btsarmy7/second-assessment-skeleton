@@ -4,48 +4,70 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+
 
 
 @Entity
-//@Table(name = "tweet")
 public class Tweet {
 
 	@Id
 	@GeneratedValue()
 	private Integer id;
 	
+	@ManyToOne
 	private User author;
 	
-	//@Column(name = "posted", nullable = false)
 	private Timestamp posted;
 	
-	//@Column(name = "content")
 	private String content;
 	
+	@ManyToOne
 	private Tweet inReplyto;
+	
+	@ManyToOne
 	private Tweet repostOf;
 	
-	//@Column(name = "deleted")
 	private boolean deleted; // keeps track of whether tweet is deleted 
 	
-	
+	@ManyToMany(mappedBy = "likedTweets")
 	private List<User> likes = new ArrayList<>();
 	
+	@ManyToMany
 	private List<Hashtag> hashtags = new ArrayList<>();
-
+	
+	@ManyToMany(mappedBy = "mentions")
 	private List<User> mentions = new ArrayList<>();
 	
-	//private List<Tweet> replies = new ArrayList<>();
+	@OneToMany
+	private List<Tweet> replies = new ArrayList<>();
 	
-	//private List<Tweet> reposts = new ArrayList<>();
+	@OneToMany(mappedBy = "repostOf")
+	private List<Tweet> reposts = new ArrayList<>();
 	
 	public Tweet() {
 		
+	}
+	
+	public List<Tweet> getReplies() {
+		return replies;
+	}
+
+	public void setReplies(List<Tweet> replies) {
+		this.replies = replies;
+	}
+
+	public List<Tweet> getReposts() {
+		return reposts;
+	}
+
+	public void setReposts(List<Tweet> reposts) {
+		this.reposts = reposts;
 	}
 	
 	public Tweet(User author, Timestamp posted, String content) {
@@ -159,6 +181,15 @@ public class Tweet {
 	public void setMentions(List<User> mentions) {
 		this.mentions = mentions;
 	}
+
+	@Override
+	public String toString() {
+		return "Tweet [id=" + id + ", author=" + author + ", posted=" + posted + ", content=" + content + ", inReplyto="
+				+ inReplyto + ", repostOf=" + repostOf + ", deleted=" + deleted + ", likes=" + likes + ", hashtags="
+				+ hashtags + ", mentions=" + mentions + ", replies=" + replies + ", reposts=" + reposts + "]";
+	}
+	
+	
 	
 	
 }

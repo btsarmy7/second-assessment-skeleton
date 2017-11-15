@@ -2,75 +2,40 @@ package com.cooksys.twitter.entity;
 
 import java.util.List;
 
-import javax.persistence.Entity;
+import com.cooksys.twitter.Dto.TweetDto;
 
-@Entity
 public class Context {
 
-	private Integer id;
-	private Tweet target;
-	private List<Tweet> before;
-	private List<Tweet> after;
+	private TweetDto target;
+	private List<TweetDto> before;
+	private List<TweetDto> after;
 	
 	public Context() {
 		
 	}
-	
-	public Integer getId() {
-		return id;
-	}
-	
-	public void setId(Integer id) {
-		this.id = id;
-	}
-	
-	public Tweet getTarget() {
+
+	public TweetDto getTarget() {
 		return target;
 	}
-	
-	public void setTarget(Tweet target) {
+
+	public void setTarget(TweetDto target) {
 		this.target = target;
 	}
-	
-	public List<Tweet> getBefore() {
+
+	public List<TweetDto> getBefore() {
 		return before;
 	}
-	
-	public void setBefore(List<Tweet> before) {
+
+	public void setBefore(List<TweetDto> before) {
 		this.before = before;
 	}
-	
-	public List<Tweet> getAfter() {
+
+	public List<TweetDto> getAfter() {
 		return after;
 	}
-	
-	public void setAfter(List<Tweet> after) {
+
+	public void setAfter(List<TweetDto> after) {
 		this.after = after;
-	}
-	
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		return result;
-	}
-	
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Context other = (Context) obj;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		return true;
 	}
 	
 	
