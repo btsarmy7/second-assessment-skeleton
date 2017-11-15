@@ -1,4 +1,4 @@
-package com.cooksys.twitter.Dto;
+package com.cooksys.twitter.dto;
 
 import java.sql.Timestamp;
 
@@ -7,22 +7,38 @@ import javax.persistence.Embedded;
 import com.cooksys.twitter.embedded.Credentials;
 import com.cooksys.twitter.embedded.Profile;
 
-
 public class UserDto {
-	
+
 	private Integer id;
-	
-	private String username;
+	private String userName;
+	private boolean status;
+
+	@Embedded
+	private Credentials credentials;
 
 	@Embedded
 	private Profile profile;
-	
 	private Timestamp joined;
-	
-	private boolean status;
-	
-	@Embedded 
-	private Credentials credentials;
+
+	public Profile getProfile() {
+		return profile;
+	}
+
+
+	public void setProfile(Profile profile) {
+		this.profile = profile;
+	}
+
+
+	public Timestamp getJoined() {
+		return joined;
+	}
+
+
+	public void setJoined(Timestamp joined) {
+		this.joined = joined;
+	}
+
 
 	public Integer getId() {
 		return id;
@@ -32,33 +48,18 @@ public class UserDto {
 		this.id = id;
 	}
 
-	public String getUsername() {
-		return username;
+	public String getUserName() {
+		return userName;
 	}
 
-	public void setUsername(String username) {
-		this.username = username;
+	public void setUserName(String userName) {
+		this.userName = userName;
 	}
 
-	public Profile getProfile() {
-		return profile;
-	}
-
-	public void setProfile(Profile profile) {
-		this.profile = profile;
-	}
-
-	public Timestamp getJoined() {
-		return joined;
-	}
-
-	public void setJoined(Timestamp joined) {
-		this.joined = joined;
-	}
-
-	public boolean isStatus() {
+	public boolean isDeleted() {
 		return status;
 	}
+
 
 	public void setStatus(boolean status) {
 		this.status = status;
@@ -68,10 +69,47 @@ public class UserDto {
 		return credentials;
 	}
 
+
 	public void setCredentials(Credentials credentials) {
 		this.credentials = credentials;
 	}
-	
-	
+
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof UserDto)) {
+			return false;
+		}
+		UserDto other = (UserDto) obj;
+		if (id == null) {
+			if (other.id != null) {
+				return false;
+			}
+		} else if (!id.equals(other.id)) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "UserDto [id=" + id + ", userName=" + userName + ", profile=" + profile + ", joined=" + joined + "]";
+	}
+
+
 
 }

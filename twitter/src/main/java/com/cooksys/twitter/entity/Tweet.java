@@ -2,7 +2,9 @@ package com.cooksys.twitter.entity;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -11,55 +13,69 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
-
-
 @Entity
 public class Tweet {
 
 	@Id
-	@GeneratedValue()
+	@GeneratedValue
 	private Integer id;
-	
+
 	@ManyToOne
 	private User author;
-	
+
 	private Timestamp posted;
-	
+
 	private String content;
-	
+
+	private boolean deleted;
+
+	@ManyToMany
+	private Set<Hashtag> hashtags = new HashSet<Hashtag>();
+
+	@ManyToMany
+	private List<User> mentionedBy = new ArrayList<User>();
+
+	@ManyToMany(mappedBy="likes")
+	private Set<User> likedBy = new HashSet<User>();
+
 	@ManyToOne
-	private Tweet inReplyto;
-	
+	private Tweet inReplyTo;
+
+	@OneToMany
+	private List<Tweet> replies = new ArrayList<Tweet>();
+
 	@ManyToOne
 	private Tweet repostOf;
-	
-	private boolean deleted; // keeps track of whether tweet is deleted 
-	
-	@ManyToMany(mappedBy = "likedTweets")
-	private List<User> likes = new ArrayList<>();
-	
-	@ManyToMany
-	private List<Hashtag> hashtags = new ArrayList<>();
-	
-	@ManyToMany(mappedBy = "mentions")
-	private List<User> mentions = new ArrayList<>();
-	
-	@OneToMany
-	private List<Tweet> replies = new ArrayList<>();
-	
-	@OneToMany(mappedBy = "repostOf")
-	private List<Tweet> reposts = new ArrayList<>();
-	
+
+	@OneToMany(mappedBy="repostOf")
+	private List<Tweet> reposts = new ArrayList<Tweet>();
+
 	public Tweet() {
-		
 	}
-	
+
+	public Tweet(boolean deleted) {
+		this.deleted = deleted;
+		/*this.hashtags = new HashSet<Hashtag>();
+		this.mentionedBy = new ArrayList<User>();
+		this.likedBy = new HashSet<User>();
+		this.replies = new ArrayList<Tweet>();
+		this.reposts = new ArrayList<Tweet>();*/
+	}
+
 	public List<Tweet> getReplies() {
 		return replies;
 	}
 
 	public void setReplies(List<Tweet> replies) {
 		this.replies = replies;
+	}
+
+	public Tweet getRepostOf() {
+		return repostOf;
+	}
+
+	public void setRepostOf(Tweet repostOf) {
+		this.repostOf = repostOf;
 	}
 
 	public List<Tweet> getReposts() {
@@ -69,13 +85,47 @@ public class Tweet {
 	public void setReposts(List<Tweet> reposts) {
 		this.reposts = reposts;
 	}
-	
-	public Tweet(User author, Timestamp posted, String content) {
+
+	public Tweet getInReplyTo() {
+		return inReplyTo;
+	}
+
+	public void setInReplyTo(Tweet inReplyTo) {
+		this.inReplyTo = inReplyTo;
+	}
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public User getAuthor() {
+		return author;
+	}
+
+	public void setAuthor(User author) {
 		this.author = author;
+	}
+
+	public Timestamp getPosted() {
+		return posted;
+	}
+
+	public void setPosted(Timestamp posted) {
 		this.posted = posted;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
 		this.content = content;
 	}
-	
+
 	public boolean isDeleted() {
 		return deleted;
 	}
@@ -84,50 +134,30 @@ public class Tweet {
 		this.deleted = deleted;
 	}
 
-	public Integer getId() {
-		return id;
+	public Set<Hashtag> getHashtags() {
+		return hashtags;
 	}
-	
-	public void setId(Integer id) {
-		this.id = id;
+
+	public void setHashtags(Set<Hashtag> hashtags) {
+		this.hashtags = hashtags;
 	}
-	
-	public User getAuthor() {
-		return author;
+
+	public List<User> getMentionedBy() {
+		return mentionedBy;
 	}
-	
-	public void setAuthor(User author) {
-		this.author = author;
+
+	public void setMentionedBy(List<User> mentionedBy) {
+		this.mentionedBy = mentionedBy;
 	}
-	
-	public Timestamp getPosted() {
-		return posted;
+
+	public Set<User> getLikedBy() {
+		return likedBy;
 	}
-	
-	public void setPosted(Timestamp posted) {
-		this.posted = posted;
+
+	public void setLikedBy(Set<User> likedBy) {
+		this.likedBy = likedBy;
 	}
-	
-	public String getContent() {
-		return content;
-	}
-	
-	public void setContent(String content) {
-		this.content = content;
-	}
-	
-	public Tweet getInReplyto() {
-		return inReplyto;
-	}
-	
-	public void setInReplyto(Tweet inReplyto) {
-		this.inReplyto = inReplyto;
-	}
-	
-	public Tweet getRepostOf() {
-		return repostOf;
-	}
-	
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -138,58 +168,28 @@ public class Tweet {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (!(obj instanceof Tweet)) {
 			return false;
+		}
 		Tweet other = (Tweet) obj;
 		if (id == null) {
-			if (other.id != null)
+			if (other.id != null) {
 				return false;
-		} else if (!id.equals(other.id))
+			}
+		} else if (!id.equals(other.id)) {
 			return false;
+		}
 		return true;
-	}
-
-	public void setRepostOf(Tweet repostOf) {
-		this.repostOf = repostOf;
-	}
-	
-	
-	public List<User> getLikes() {
-		return likes;
-	}
-
-	public void setLikes(List<User> likes) {
-		this.likes = likes;
-	}
-
-	public List<Hashtag> getHashtags() {
-		return hashtags;
-	}
-
-	public void setHashtags(List<Hashtag> hashtags) {
-		this.hashtags = hashtags;
-	}
-
-	public List<User> getMentions() {
-		return mentions;
-	}
-
-	public void setMentions(List<User> mentions) {
-		this.mentions = mentions;
 	}
 
 	@Override
 	public String toString() {
-		return "Tweet [id=" + id + ", author=" + author + ", posted=" + posted + ", content=" + content + ", inReplyto="
-				+ inReplyto + ", repostOf=" + repostOf + ", deleted=" + deleted + ", likes=" + likes + ", hashtags="
-				+ hashtags + ", mentions=" + mentions + ", replies=" + replies + ", reposts=" + reposts + "]";
+		return "Tweet [id=" + id + ", posted=" + posted + ", content=" + content + ", deleted=" + deleted + "]";
 	}
-	
-	
-	
-	
 }

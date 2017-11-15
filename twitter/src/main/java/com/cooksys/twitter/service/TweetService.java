@@ -2,203 +2,288 @@ package com.cooksys.twitter.service;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.cooksys.twitter.Dto.HashtagDto;
-import com.cooksys.twitter.Dto.TweetDto;
-import com.cooksys.twitter.Dto.UserDto;
-import com.cooksys.twitter.embedded.Credentials;
-import com.cooksys.twitter.entity.Context;
+import com.cooksys.twitter.controller.UserController;
+import com.cooksys.twitter.dto.UserDto;
+import com.cooksys.twitter.dto.HashtagDto;
+import com.cooksys.twitter.dto.TweetDto;
+import com.cooksys.twitter.embedded.Context;
+import com.cooksys.twitter.embedded.TweetData;
+import com.cooksys.twitter.entity.User;
 import com.cooksys.twitter.entity.Hashtag;
 import com.cooksys.twitter.entity.Tweet;
-import com.cooksys.twitter.entity.User;
+import com.cooksys.twitter.mapper.UserMapper;
 import com.cooksys.twitter.mapper.HashtagMapper;
 import com.cooksys.twitter.mapper.TweetMapper;
-import com.cooksys.twitter.mapper.UserMapper;
+import com.cooksys.twitter.repository.UserRepository;
 import com.cooksys.twitter.repository.HashtagRepository;
 import com.cooksys.twitter.repository.TweetRepository;
-import com.cooksys.twitter.repository.UserRepository;
 
 @Service
 public class TweetService {
-	
-	private HashtagRepository hashtagRepository;
+
+	private HashtagService hashtagService;
+	private UserController userController;
 	private UserRepository userRepository;
 	private TweetRepository tweetRepository;
-	
-	private UserMapper userMapper;
+	private HashtagRepository hashtagRepository;
 	private TweetMapper tweetMapper;
 	private HashtagMapper hashtagMapper;
-	
-	public TweetService(HashtagRepository hashtagRepository, UserRepository userRepository, 
-			TweetRepository tweetRepository, UserMapper userMapper, TweetMapper tweetMapper, HashtagMapper hashtagMapper) {
-		
-		this.hashtagRepository = hashtagRepository;
+	private UserMapper userMapper;
+
+	public TweetService(HashtagService hashtagService, UserController userController,
+			UserRepository userRepository, TweetRepository tweetRepository, HashtagRepository hashtagRepository,
+			TweetMapper tweetMapper, HashtagMapper hashtagMapper, UserMapper userMapper) {
+		this.hashtagService = hashtagService;
+		this.userController = userController;
 		this.userRepository = userRepository;
 		this.tweetRepository = tweetRepository;
-		this.userMapper = userMapper;
+		this.hashtagRepository = hashtagRepository;
 		this.tweetMapper = tweetMapper;
 		this.hashtagMapper = hashtagMapper;
-		
+		this.userMapper = userMapper;
 	}
 
-	public List<TweetDto> getAllTweets() {
-		return tweetRepository.findAll().stream().map(tweetMapper :: toTweetDto).collect(Collectors.toList());
+	@Transactional
+	public TweetDto createSimpleTweet(TweetData simpleTweetData){
+		User author= userRepository.findByUserName(simpleTweetData.getCredentials().getUserLogin());
+		String content = simpleTweetData.getContent();
+		Tweet tweet = new Tweet(false);
+		tweetRepository.saveAndFlush(tweet);
+		tweet.setPosted(new Timestamp(System.currentTimeMillis()));
+		tweet.setContent(content);
+		hashtagsInTweet(tweet, content);
+		mentionsInTweet(tweet, content);
+		tweet.setAuthor(author);
+		return tweetMapper.toTweetDto(tweetRepository.save(tweet));
 	}
 
+	public List<TweetDto> findByHashtags(String hashtagName) {
 
-	public TweetDto postNewTweet(String content, Credentials credentials){
-	
-			User user = userRepository.findby_username(credentials.getUsername());
-			Tweet newTweet = new Tweet(user, new Timestamp(System.currentTimeMillis()), content);
-			newTweet.setDeleted(false);
-			tweetRepository.saveAndFlush(newTweet);
-			newTweet.setHashtags(findContentHashtags(newTweet));
-			newTweet.setMentions(findMentions(newTweet));
-			tweetRepository.saveAndFlush(newTweet);
-			user.getAllTweets().add(newTweet);
-			userRepository.saveAndFlush(user);
-			return tweetMapper.toTweetDto(newTweet);
-		
-		
+		Hashtag tag = hashtagRepository.findByHashtagName(hashtagName);
+		ArrayList<Tweet> tweets = new ArrayList<Tweet>();
+		tweets.addAll(tweetRepository.findByHashtagsAndDeleted(tag, false));
+		Comparator<Tweet> compareTweets = new Comparator<Tweet>(){
+			public int compare(Tweet t1, Tweet t2){
+				return -t1.getPosted().compareTo(t2.getPosted());
+			}
+		};
+		Collections.sort(tweets, compareTweets);
+		return tweetMapper.toTweetDtos(tweets);
 	}
-	
-	private List<Hashtag> findContentHashtags(Tweet tweet){
-		
-		if(tweet.equals(null))
+
+	public List<TweetDto> getTweets() {
+		List<Tweet> allTweets = tweetRepository.findAll(new Sort(Sort.Direction.DESC, "posted"));
+		List<Tweet> returnedTweets = new ArrayList<Tweet>();
+
+		for (Tweet t : allTweets){
+			if (!t.isDeleted())
+				returnedTweets.add(t);
+		}
+		return tweetMapper.toTweetDtos(returnedTweets);
+
+	}
+
+	public TweetDto getTweetById(Integer id) {
+		return tweetMapper.toTweetDto(tweetRepository.findByIdAndDeleted(id, false));
+	}
+
+	@Transactional
+	public TweetDto deleteTweetById(Integer id) {
+		Tweet tweet = tweetRepository.findById(id);
+		if (tweet == null || tweet.isDeleted())
 			return null;
-		List<Hashtag> hashtags = new ArrayList<>();
-		String string = tweet.getContent();
-		Pattern pattern = Pattern.compile("#(\\S+)");
-		Matcher matcher = pattern.matcher(string);
-		while(matcher.find()) {
-			Hashtag h = new Hashtag();
-			h.setLabel(matcher.group(1));
-			if(hashtagRepository.findByLabel(h.getLabel()) != null) {
-				h.setFirstUsed(new Timestamp(System.currentTimeMillis()));
-			}
-			h.getTweets().add(tweet);
-			h.setLastUsed(new Timestamp(System.currentTimeMillis()));
-			hashtags.add(h);
-		} return hashtags;
-	}
-	
-	private List<User> findMentions(Tweet tweet){
-		
-		List<User> mentions = new ArrayList<>();
-		String string = tweet.getContent();
-		Pattern pattern = Pattern.compile("@(\\S+)");
-		Matcher matcher = pattern.matcher(string);
-		while(matcher.find()) {
-			if(userRepository.findby_username(matcher.group(1)) == null);
-			else {
-				User user = userRepository.findby_username(matcher.group(1));
-				mentions.add(user);
-				user.getMentions().add(tweet);
-				userRepository.saveAndFlush(user);				
-			}
-		} return mentions;
-	}
-
-
-	public TweetDto getTweet(Integer id){	
-		
-			Tweet tweet = tweetRepository.findById(id);
-			return tweetMapper.toTweetDto(tweet);
-			
-	
-	}
-
-	public TweetDto deleteUserTweet(Integer id, Credentials credentials){
-		
-		Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
 		tweet.setDeleted(true);
 		return tweetMapper.toTweetDto(tweet);
 	}
 
+	public boolean tweetExists(Integer id){
+		return getTweetById(id) != null;
+	}
 
-	public void likedTweets(Integer id, Credentials credentials){
-		
-		Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
-		User user = userRepository.findby_username(credentials.getUsername());
-		tweet.getLikes().add(user);
+	@Transactional
+	public void like(Integer id, String userName) {
+		Tweet tweet = tweetRepository.findById(id);
+		User u = userRepository.findByUserName(userName);
+		u.getLikes().add(tweet);
+	}
+
+	@Transactional
+	public TweetDto replyTo(Integer id, TweetData tweetData) {
+		User author= userRepository.findByUserName(tweetData.getCredentials().getUserLogin());
+		String content = tweetData.getContent();
+		Tweet tweet = new Tweet(false);
 		tweetRepository.saveAndFlush(tweet);
-		user.getLikedTweets().add(tweet);
-		userRepository.saveAndFlush(user);
+		Tweet inReplyTo = tweetRepository.findById(id);
+
+		tweet.setPosted(new Timestamp(System.currentTimeMillis()));
+		tweet.setContent(content);
+		tweet = hashtagsInTweet(tweet, content);
+		tweet = mentionsInTweet(tweet, content);
+		tweet.setInReplyTo(inReplyTo);
+		tweet.setAuthor(author);
+		return tweetMapper.toTweetDto(tweetRepository.save(tweet));
 	}
 
-
-	public TweetDto reply(Integer id, String content, Credentials credentials){
-		
-		User user = userRepository.findby_username(credentials.getUsername());
-		Tweet newTweet = new Tweet(user, new Timestamp(System.currentTimeMillis()), content);
-		newTweet.setDeleted(false);
-		newTweet.setHashtags(findContentHashtags(newTweet));
-		tweetRepository.saveAndFlush(newTweet);
-		Tweet tweet = tweetMapper.toTweet(getTweet(id));
-		tweet.setInReplyto(newTweet);
-		tweetRepository.saveAndFlush(tweet);
-		return tweetMapper.toTweetDto(newTweet);
-				
-	}
-
-
-	public TweetDto repostTweet(Integer id, Credentials credentials){
-		
-		User user = userRepository.findby_username(credentials.getUsername());
-		Tweet originalTweet = tweetMapper.toTweet(getTweet(id));
-		Tweet repost = new Tweet(user, new Timestamp(System.currentTimeMillis()), null);
-		repost.setDeleted(false);
-		repost.setRepostOf(originalTweet);
-		tweetRepository.saveAndFlush(repost);
-		return tweetMapper.toTweetDto(repost);
-		
-	}
-
-	public List<HashtagDto> userTaggedTweets(Integer id){
-			Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
-			return tweet.getHashtags().stream().map(hashtagMapper :: toHashtagDto).collect(Collectors.toList());
-			
-	}
-
-
-	public List<UserDto> usersLiked(Integer id){
-		
-			 Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
-			 return tweet.getLikes().stream().map(userMapper :: toUserDto).collect(Collectors.toList());
-		 
-	}
-
-
-	public Context tweetContext(Integer id){
-		return null;
-	}
-
-
-	public List<TweetDto> userReplies(Integer id){
-			Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
-			return tweet.getReplies().stream().map(tweetMapper :: toTweetDto).collect(Collectors.toList());
-		
-	}
-
-
-	public List<TweetDto> userReposts(Integer id){
-			Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
-			return tweet.getReposts().stream().map(tweetMapper :: toTweetDto).collect(Collectors.toList());
-		
-	}
-
-
-	public List<UserDto> userMentions(Integer id){
-			
-			 Tweet tweet = tweetRepository.findByIdAndDeletedFalse(id);
-			 List<User> usersMentioned = findMentions(tweet);
-			 return usersMentioned.stream().map(userMapper :: toUserDto).collect(Collectors.toList());
+	private Tweet hashtagsInTweet(Tweet tweet, String content){
+		String hashtag;
+		Hashtag tag;
+		Pattern p = Pattern.compile("#\\w*");
+		Matcher m = p.matcher(content);
+		while(m.find()){
+			hashtag = m.group().substring(1);
+			System.out.println(hashtag);
+			if (!hashtagService.tagExists(hashtag)){
+				tag = hashtagService.create(hashtag);
+			} else {
+				tag = hashtagRepository.findByHashtagName(hashtag);
+			}
+			tweet.getHashtags().add(tag);
+		}
+		return tweet;
 	}
 	
+	/*private List<Hashtag> findContentHashtags(Tweet tweet){
+	
+	if(tweet.equals(null))
+		return null;
+	List<Hashtag> hashtags = new ArrayList<>();
+	String string = tweet.getContent();
+	Pattern pattern = Pattern.compile("#(\\S+)");
+	Matcher matcher = pattern.matcher(string);
+	while(matcher.find()) {
+		Hashtag h = new Hashtag();
+		h.setLabel(matcher.group(1));
+		if(hashtagRepository.findByLabel(h.getLabel()) != null) {
+			h.setFirstUsed(new Timestamp(System.currentTimeMillis()));
+		}
+		h.getTweets().add(tweet);
+		h.setLastUsed(new Timestamp(System.currentTimeMillis()));
+		hashtags.add(h);
+		} return hashtags;
+	}*/
+	
+	
+
+	private Tweet mentionsInTweet(Tweet tweet, String content){
+		String userName;
+		User usr;
+		Pattern p = Pattern.compile("@\\w*");
+		Matcher m = p.matcher(content);
+		
+		while(m.find()){
+			userName = m.group().substring(1);
+			if (userController.validUser(userName)){
+				usr = userRepository.findByUserName(userName);
+				tweet.getMentionedBy().add(usr);
+			}
+		}
+		return tweet;
+	}
+	
+	/*private List<User> findMentions(Tweet tweet){
+	
+	List<User> mentions = new ArrayList<>();
+	String string = tweet.getContent();
+	Pattern pattern = Pattern.compile("@(\\S+)");
+	Matcher matcher = pattern.matcher(string);
+	while(matcher.find()) {
+		if(userRepository.findby_username(matcher.group(1)) == null);
+		else {
+			User user = userRepository.findby_username(matcher.group(1));
+			mentions.add(user);
+			user.getMentions().add(tweet);			
+			}
+		} return mentions;
+	}*/
+
+	@Transactional
+	public TweetDto repost(Integer id, String userName) {
+		User author = userRepository.findByUserName(userName);
+		Tweet tweet = new Tweet(false);
+		tweetRepository.saveAndFlush(tweet);
+		Tweet repostOf = tweetRepository.findById(id);
+
+		tweet.setPosted(new Timestamp(System.currentTimeMillis()));
+		tweet.setRepostOf(repostOf);
+		tweet.setContent(repostOf.getContent());
+		tweet.setAuthor(author);
+		return tweetMapper.toTweetDto(tweetRepository.save(tweet));
+	}
+
+	public Set<HashtagDto> getTagsByTweet(Integer id) {
+		Tweet tweet = tweetRepository.findById(id);
+		return hashtagMapper.toHashtagDtos(tweet.getHashtags());
+	}
+
+	public Set<UserDto> getLikesByTweet(Integer id) {
+		Tweet tweet = tweetRepository.findById(id);
+		return userMapper.toUserDtos(userRepository.findByLikesAndDeleted(tweet, false));
+	}
+
+	public List<TweetDto> getRepliesByTweet(Integer id) {
+		Tweet tweet = tweetRepository.findById(id);
+		return tweetMapper.toTweetDtos(tweetRepository.findByinReplyToAndDeleted(tweet, false));
+}
+
+	public List<UserDto> getMentionsByTweet(Integer id) {
+		Tweet tweet = tweetRepository.findById(id);
+		return userMapper.toUserDtos(userRepository.findByMentionsAndDeleted(tweet, false));
+	}
+
+	public List<TweetDto> getRepostsByTweet(Integer id) {
+		Tweet tweet = tweetRepository.findById(id);
+		List<Tweet> tweets = tweetRepository.findByRepostOfAndDeleted(tweet, false);
+		return tweetMapper.toTweetDtos(tweets);
+	}
+
+	public Context getContext(Integer id) {
+		Tweet found;
+		Tweet target = tweetRepository.findById(id);
+		Tweet tweet = target;
+		Context context = new Context(tweetMapper.toTweetDto(target));
+
+		// Find the before tweets
+		ArrayList<Tweet> before = new ArrayList<Tweet>();
+		while (tweet.getInReplyTo() != null){
+			found = tweet.getInReplyTo();
+			if (!found.isDeleted())
+				before.add(found);
+			tweet = found;
+		}
+		// Sort by timestamp
+		Comparator<Tweet> compareTweets = new Comparator<Tweet>(){
+			public int compare(Tweet t1, Tweet t2){
+				return -t1.getPosted().compareTo(t2.getPosted());
+			}
+		};
+		Collections.sort(before, compareTweets);
+		context.setBefore(tweetMapper.toTweetDtos(before));
+
+		// look through after tweets
+		ArrayList<Tweet> after = new ArrayList<Tweet>();
+		tweetsAfter(target, after);
+		
+		Collections.sort(after, compareTweets);
+		context.setAfter(tweetMapper.toTweetDtos(after));
+		return context;
+	}
+
+	private void tweetsAfter(Tweet current, ArrayList<Tweet> after) {
+		for (Tweet tweet : tweetRepository.findByinReplyTo(current)){
+			if (!tweet.isDeleted())
+				after.add(tweet);
+			tweetsAfter(tweet, after);
+		}
+	}
 }

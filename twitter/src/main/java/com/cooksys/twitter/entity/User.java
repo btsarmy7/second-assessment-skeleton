@@ -2,7 +2,9 @@ package com.cooksys.twitter.entity;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
@@ -10,97 +12,64 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
 import com.cooksys.twitter.embedded.Credentials;
 import com.cooksys.twitter.embedded.Profile;
 
-
-@Entity 
+@Entity
+@Table(name = "Usertable")
 public class User {
-	
+
 	@Id
 	@GeneratedValue
 	private Integer id;
-	
-	private String username;
-	
+
+	private String userName;
+
+	private boolean deleted;
+
+	private Timestamp joined;
+
 	@Embedded
 	private Profile profile;
-	
-	private Timestamp joined;
-	
-	private boolean status; // true if user is active, false if user is "deleted"
-	
+
 	@Embedded
 	private Credentials credentials;
 	
+	@ManyToMany(mappedBy="mentionedBy")
+	private List<Tweet> mentions = new ArrayList<Tweet>();
+
 	@ManyToMany
-	private List<Tweet> likedTweets = new ArrayList<>();
-	    
+	private Set<Tweet> likes = new HashSet<Tweet>();
+
 	@ManyToMany
-	private List<User> followers = new ArrayList<>();
-	
-	@ManyToMany(mappedBy = "followers")
-	private List<User> following = new ArrayList<>();
-	
-	@OneToMany(mappedBy = "author")
-	private List<Tweet> allTweets = new ArrayList<>();
-	
-	@ManyToMany(mappedBy = "mentions")
-	private List<Tweet> mentions = new ArrayList<>();
-	
-	
+	private Set<User> followers = new HashSet<User>();
+
+	@ManyToMany(mappedBy="followers")
+	private Set<User> following = new HashSet<User>();
+
+	@OneToMany(mappedBy="author")
+	private Set<Tweet> tweets = new HashSet<Tweet>();
+
 	public User() {
 		
 	}
-	
-	public User(String username, Profile profile, Timestamp timestamp, Credentials credentials) {
-		this.username = username;
+
+	public User(Credentials credentials, Profile profile) {
+		this.userName = credentials.getUserLogin();
+		this.deleted = false;
+		this.credentials = credentials;
 		this.profile = profile;
-		this.joined = timestamp;
+		this.joined = new Timestamp(System.currentTimeMillis());
+	}
+
+	public User(boolean deleted, Credentials credentials, Profile profile) {
+		this.userName = credentials.getUserLogin();
+		this.deleted = deleted;
 		this.credentials = credentials;
-		this.status = true;
-	}
-	
-	
-	public Credentials getCredentials() {
-		return credentials;
-	}
-
-	public void setCredentials(Credentials credentials) {
-		this.credentials = credentials;
-	}
-
-	public List<Tweet> getLikedTweets() {
-		return likedTweets;
-	}
-
-	public void setLikedTweets(List<Tweet> likedTweets) {
-		this.likedTweets = likedTweets;
-	}
-
-	public List<User> getFollowers() {
-		return followers;
-	}
-
-	public void setFollowers(List<User> followers) {
-		this.followers = followers;
-	}
-
-	public List<User> getFollowing() {
-		return following;
-	}
-
-	public void setFollowing(List<User> following) {
-		this.following = following;
-	}
-
-	public List<Tweet> getAllTweets() {
-		return allTweets;
-	}
-
-	public void setAllTweets(List<Tweet> allTweets) {
-		this.allTweets = allTweets;
+		this.profile = profile;
+		this.joined = new Timestamp(System.currentTimeMillis());
 	}
 
 	public List<Tweet> getMentions() {
@@ -111,47 +80,86 @@ public class User {
 		this.mentions = mentions;
 	}
 
-	
-	public boolean isStatus() {
-		return status;
+	public Set<Tweet> getLikes() {
+		return likes;
 	}
 
-	public void setStatus(boolean status) {
-		this.status = status;
+	public void setLikes(Set<Tweet> likes) {
+		this.likes = likes;
 	}
 
 	public Integer getId() {
 		return id;
 	}
-	
+
 	public void setId(Integer id) {
 		this.id = id;
 	}
-	
-	public String getUsername() {
-		return username;
+
+	public String getUserName() {
+		return userName;
 	}
-	
-	public void setUsername(String username) {
-		this.username = username;
+
+	public void setUserName(String userName) {
+		this.userName = userName;
 	}
-	
-	public Profile getProfile() {
-		return profile;
+
+	public boolean isDeleted() {
+		return deleted;
 	}
-	
-	public void setProfile(Profile profile) {
-		this.profile = profile;
+
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
 	}
-	
+
 	public Timestamp getJoined() {
 		return joined;
 	}
-	
+
 	public void setJoined(Timestamp joined) {
 		this.joined = joined;
 	}
-	
+
+	public Credentials getCredentials() {
+		return credentials;
+	}
+
+	public void setCredentials(Credentials credentials) {
+		this.credentials = credentials;
+	}
+
+	public Profile getProfile() {
+		return profile;
+	}
+
+	public void setProfile(Profile profile) {
+		this.profile = profile;
+	}
+
+	public Set<User> getFollowers() {
+		return followers;
+	}
+
+	public void setFollowers(Set<User> followers) {
+		this.followers = followers;
+	}
+
+	public Set<User> getFollowing() {
+		return following;
+	}
+
+	public void setFollowing(Set<User> following) {
+		this.following = following;
+	}
+
+	public Set<Tweet> getTweets() {
+		return tweets;
+	}
+
+	public void setTweets(Set<Tweet> tweets) {
+		this.tweets = tweets;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -159,31 +167,32 @@ public class User {
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return result;
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (!(obj instanceof User)) {
 			return false;
+		}
 		User other = (User) obj;
 		if (id == null) {
-			if (other.id != null)
+			if (other.id != null) {
 				return false;
-		} else if (!id.equals(other.id))
+			}
+		} else if (!id.equals(other.id)) {
 			return false;
+		}
 		return true;
 	}
 
 	@Override
 	public String toString() {
-		return "User [id=" + id + ", username=" + username + ", profile=" + profile + ", joined=" + joined + ", status="
-				+ status + ", credentials=" + credentials + ", likedTweets=" + likedTweets + ", followers=" + followers
-				+ ", following=" + following + ", allTweets=" + allTweets + ", mentions=" + mentions + "]";
+		return "User [id=" + id + ", userName=" + userName + ", deleted=" + deleted + ", joined=" + joined
+				+ ", profile=" + profile + ", credentials=" + credentials + "]";
 	}
-	
-	
-
 }

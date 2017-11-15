@@ -1,17 +1,18 @@
-package com.cooksys.twitter.entity;
+package com.cooksys.twitter.embedded;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.cooksys.twitter.Dto.TweetDto;
+import com.cooksys.twitter.dto.TweetDto;
 
 public class Context {
 
 	private TweetDto target;
-	private List<TweetDto> before;
-	private List<TweetDto> after;
-	
-	public Context() {
-		
+	private List<TweetDto> before = new ArrayList<TweetDto>();
+	private List<TweetDto> after = new ArrayList<TweetDto>();
+
+	public Context(TweetDto target) {
+		this.target = target;
 	}
 
 	public TweetDto getTarget() {
@@ -37,8 +38,6 @@ public class Context {
 	public void setAfter(List<TweetDto> after) {
 		this.after = after;
 	}
-	
-	
 	
 	
 }

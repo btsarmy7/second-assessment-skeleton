@@ -4,11 +4,11 @@ import javax.persistence.Embeddable;
 import javax.persistence.Embedded;
 
 @Embeddable
-public class UserInfo {
+public class UserData {
 
 	@Embedded
 	private Credentials credentials;
-	
+
 	@Embedded
 	private Profile profile;
 
@@ -27,12 +27,12 @@ public class UserInfo {
 	public void setProfile(Profile profile) {
 		this.profile = profile;
 	}
-	
-	public String getUsername() {
-		return credentials.getUsername();
+
+	public String getUserName(){
+		return credentials.getUserLogin();
 	}
-	
-	public String getPassword() {
+
+	public String getPassword(){
 		return credentials.getPassword();
 	}
 
@@ -47,30 +47,36 @@ public class UserInfo {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (!(obj instanceof UserData)) {
 			return false;
-		UserInfo other = (UserInfo) obj;
+		}
+		UserData other = (UserData) obj;
 		if (credentials == null) {
-			if (other.credentials != null)
+			if (other.credentials != null) {
 				return false;
-		} else if (!credentials.equals(other.credentials))
+			}
+		} else if (!credentials.equals(other.credentials)) {
 			return false;
+		}
 		if (profile == null) {
-			if (other.profile != null)
+			if (other.profile != null) {
 				return false;
-		} else if (!profile.equals(other.profile))
+			}
+		} else if (!profile.equals(other.profile)) {
 			return false;
+		}
 		return true;
 	}
 
 	@Override
 	public String toString() {
-		return "UserInfo [credentials=" + credentials + ", profile=" + profile + "]";
+		return "UserData [credentials=" + credentials + ", profile=" + profile + "]";
 	}
-	
-	
+
 }

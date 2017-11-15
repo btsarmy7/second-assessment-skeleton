@@ -1,21 +1,31 @@
 package com.cooksys.twitter.repository;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.cooksys.twitter.entity.User;
+import com.cooksys.twitter.entity.Tweet;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
-	
-	 User findby_username(String username);
 
-	 List<User> findByStatusTrue(); // list of all active users
+	Set<User> findByDeleted(boolean deleted);
 	
-	 User findByUsernameAndStatusFalse(String username); // find "deleted" user
+
+	User findByUserName(String userName);
+
+	User findByIdAndFollowing(Integer id, User followedUser);
+
+
+	Set<User> findByFollowersAndDeleted(User usr, boolean status);
+
+	Set<User> findByFollowingAndDeleted(User usr, boolean status);
+
 	
-	 User findByUsernameAndStatusTrue(String username); // find active user
-	 
-	 User findById(Integer id);
-	
+
+	Set<User> findByLikesAndDeleted(Tweet tweet, boolean status);
+
+	List<User> findByMentionsAndDeleted(Tweet tweet, boolean status);
+
 }

@@ -1,175 +1,218 @@
 package com.cooksys.twitter.service;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.cooksys.twitter.Dto.TweetDto;
-import com.cooksys.twitter.Dto.UserDto;
+import com.cooksys.twitter.dto.UserDto;
+import com.cooksys.twitter.dto.TweetDto;
+import com.cooksys.twitter.embedded.UserData;
 import com.cooksys.twitter.embedded.Credentials;
 import com.cooksys.twitter.embedded.Profile;
-import com.cooksys.twitter.embedded.UserInfo;
-import com.cooksys.twitter.entity.Tweet;
 import com.cooksys.twitter.entity.User;
-import com.cooksys.twitter.mapper.TweetMapper;
+import com.cooksys.twitter.entity.Tweet;
 import com.cooksys.twitter.mapper.UserMapper;
-import com.cooksys.twitter.repository.HashtagRepository;
-import com.cooksys.twitter.repository.TweetRepository;
+import com.cooksys.twitter.mapper.TweetMapper;
 import com.cooksys.twitter.repository.UserRepository;
+import com.cooksys.twitter.repository.TweetRepository;
 
 @Service
 public class UserService {
-	
+
 	private UserRepository userRepository;
-	private TweetRepository tweetRepository;
-	private HashtagRepository hashtagRepository;
-	
 	private UserMapper userMapper;
+	private TweetRepository tweetRepository;
 	private TweetMapper tweetMapper;
 
-	public UserService(UserRepository userRepository, TweetRepository tweetRepository, HashtagRepository hashtagRepository,
-			UserMapper userMapper, TweetMapper tweetMapper) {
-		 
+	public UserService(UserRepository userRepository, UserMapper userMapper, TweetRepository tweetRepository, TweetMapper tweetMapper) {
 		this.userRepository = userRepository;
-		this.tweetRepository = tweetRepository;
 		this.userMapper = userMapper;
+		this.tweetRepository = tweetRepository;
 		this.tweetMapper = tweetMapper;
 	}
-	
-	
-	public boolean isHashtag(String label) {
-		
-		if(hashtagRepository.findByLabel(label) != null)
-			return true;
-		else
-			return false;
+
+	public boolean userNameExists(String userName) {
+		User user = userRepository.findByUserName(userName);
+		return user != null;
 	}
 	
-	public boolean isUsername(String username) {
-		// check among active users
-		if(userRepository.findByUsernameAndStatusTrue(username) != null)
-			return true;
-		else
-			return false;
+	public Set<UserDto> findUsers() {
+		return userMapper.toUserDtos(userRepository.findByDeleted(false));
 	}
 	
-	public boolean availableUsername(String username) {
-		// check in all users including "deleted" ones
-		if(userRepository.findByUsernameAndStatusFalse(username) != null)
-			return false;
-		else
-			return true;
-	}
-	
-	
-	public UserDto[] getAllActiveUsers() {
-		UserDto[] allUsers = new UserDto[userRepository.findByStatusTrue().size()];
-		List<UserDto> allUserDtos = userRepository.findByStatusTrue().stream().map(userMapper::toUserDto).collect(Collectors.toList());
-		for(int i = 0; i < userRepository.findAll().size(); i++) {
-			allUsers[i] = allUserDtos.get(i);
+	/*public UserDto[] getAll() {
+	UserDto[] allUsers = new UserDto[userRepository.getAllUsers().size()];
+	List<UserDto> allUserDtos = userRepository.getAllUsers().stream().map(userMapper::toUserDto).collect(Collectors.toList());
+	for(int i = 0; i < userRepository.getAllUsers().size(); i++) {
+		if(allUserDtos.get(i).isActive()) {
+		allUsers[i] = allUserDtos.get(i);
 		}
+	}
 		return allUsers;
+	}*/
+
+	@Transactional
+	public UserDto create(Credentials credentials, Profile profile) {
+
+		User user = new User(credentials, profile);
+		return userMapper.toUserDto(userRepository.save(user));
+	}
+	
+	@Transactional
+	public UserDto create(boolean status, Credentials credentials, Profile profile) {
+		User user = new User(status, credentials, profile);
+		return userMapper.toUserDto(userRepository.save(user));
+	}
+	
+	@Transactional
+	public UserDto create(UserData userData){
+		User user = new User(userData.getCredentials(), userData.getProfile());
+		return userMapper.toUserDto(userRepository.save(user));
 	}
 
+	public UserDto findByUserName(String userName){
+		return userMapper.toUserDto(userRepository.findByUserName(userName));
+	}
 
-	public UserDto addUser(UserInfo userInfo) {
-		User user = new User(userInfo.getUsername(), userInfo.getProfile(), new Timestamp(System.currentTimeMillis()), userInfo.getCredentials());
+	@Transactional
+	public UserDto activateUser(UserDto userDto) {
+		User user = userRepository.findByUserName(userDto.getUserName());
+		user.setDeleted(false);
+		// activate all of the user's previous tweets
+		List<Tweet> userTweets = tweetRepository.findByAuthorAndDeleted(user, true);
+		for (Tweet t : userTweets){
+			t.setDeleted(false);
+			tweetRepository.save(t);
+		}
 		userRepository.saveAndFlush(user);
 		return userMapper.toUserDto(user);
 	}
 	
-	public UserDto getUsername(String username) {
-		User user = userRepository.findby_username(username);
+	public boolean userIsDeleted(String userName){
+		return findByUserName(userName).isDeleted();
+	}
+	
+	@Transactional
+	public UserDto updateUser(UserData userData) {
+		User user = userRepository.findByUserName(userData.getUserName());
+
+		user.getProfile().setEmail(userData.getProfile().getEmail());
+		user.getProfile().setFirstName(userData.getProfile().getFirstName());
+		user.getProfile().setLastName(userData.getProfile().getLastName());
+		user.getProfile().setPhone(userData.getProfile().getPhone());
+		userRepository.saveAndFlush(user);
 		return userMapper.toUserDto(user);
-				
 	}
 
-
-	public UserDto updateUserProfile(Credentials credentials, Profile profile) {
-		User user = userRepository.findby_username(credentials.getUsername());
-		user.setProfile(profile);
-		User updatedUser = userRepository.saveAndFlush(user);
-		return userMapper.toUserDto(updatedUser);
+	/*public UserDto update(Integer id, Profile profile) {
+		User updated = userRepository.get(id);
+		updated.setProfile(profile);
+		userRepository.update(updated);
+		return userMapper.toUserDto(updated);
+	}*/
+	
+	public boolean validatePassword(UserData userData) {
+		User u = userRepository.findByUserName(userData.getUserName());
+		return userData.getPassword().equals(u.getCredentials().getPassword());
 	}
 
+	public boolean validatePassword(Credentials credentials) {
+		User u = userRepository.findByUserName(credentials.getUserLogin());
+		return credentials.getPassword().equals(u.getCredentials().getPassword());
+	}
 
-	public UserDto deleteUser(Credentials credentials) {
+	@Transactional
+	public UserDto deleteUser(String userName) {
+		User user = userRepository.findByUserName(userName);
+		
+		List<Tweet> userTweets = tweetRepository.findByAuthorAndDeleted(user, false);
+		for (Tweet t : userTweets){
+			t.setDeleted(true);
+			tweetRepository.save(t);
+		}
+		user.setDeleted(true);
+		userRepository.saveAndFlush(user);
+		return userMapper.toUserDto(user);
+	}
+
+	/*public UserDto deleteUser(Credentials credentials) {
 		User user = userRepository.findby_username(credentials.getUsername());
 		user.setStatus(false);
 		List<Tweet> deleteTweets = user.getAllTweets();
 		for(Tweet t : deleteTweets) {
 			t.setContent("");
 			t.setDeleted(true);
-			tweetRepository.saveAndFlush(t);
 		}
 		return userMapper.toUserDto(user);
+	}*/
+	
+	@Transactional
+	public void follow(String followed, String follower) {
+		User followedUser = userRepository.findByUserName(followed);
+		User followerUser = userRepository.findByUserName(follower);
+		followedUser.getFollowers().add(followerUser);
+	}
+
+	public Set<UserDto> getFollowers(String userName) {
+		User user = userRepository.findByUserName(userName);
+		return userMapper.toUserDtos(userRepository.findByFollowersAndDeleted(user, false));
 	}
 	
-public void follow(String username, Credentials credentials){
-		
-			User follower = userRepository.findby_username(credentials.getUsername());
-			User followed = userRepository.findby_username(username);
-			follower.getFollowing().add(followed);
-			followed.getFollowers().add(follower);
-			userRepository.saveAndFlush(follower);
-			userRepository.saveAndFlush(followed);
-		
+	public Set<UserDto> getFollowing(String userName) {
+		User user = userRepository.findByUserName(userName);
+		return userMapper.toUserDtos(userRepository.findByFollowingAndDeleted(user, false));
 	}
 
-
-	public void unfollow(String username, Credentials credentials){
-		
-			User follower = userRepository.findby_username(credentials.getUsername());
-			User followed = userRepository.findby_username(username);
-			follower.getFollowing().remove(followed);
-			followed.getFollowers().remove(follower);
-			userRepository.saveAndFlush(follower);
-			userRepository.saveAndFlush(followed);
-		
+	@Transactional
+	public void unFollow(String followed, String follower) {
+		User followedUser = userRepository.findByUserName(followed);
+		User followerUser = userRepository.findByUserName(follower);
+		followedUser.getFollowers().remove(followerUser);
 	}
 
-
-	public List<TweetDto> getFeed(String username){
+	public List<TweetDto> getFeed(String userName) {
+		User user = userRepository.findByUserName(userName);	
+		List<Tweet> feed = tweetRepository.findByAuthorAndDeleted(user, false);
+		Set<User> isFollowing = userRepository.findByFollowingAndDeleted(user, false);
+		for (User u : isFollowing){
+			feed.addAll(tweetRepository.findByAuthorAndDeleted(u, false));
+		}
 		
-			User user = userRepository.findby_username(username);
-			List<Tweet> userFeed = new ArrayList<>();
-			for(User f : user.getFollowing()) {
-				userFeed.addAll(f.getAllTweets());
+		// Compare tweets' timestamps for sorting
+		Comparator<Tweet> compareTweets = new Comparator<Tweet>(){
+			public int compare(Tweet t1, Tweet t2){
+				return -t1.getPosted().compareTo(t2.getPosted());
 			}
-			return userFeed.stream().map(tweetMapper::toTweetDto).collect(Collectors.toList());	
+		};
+		Collections.sort(feed, compareTweets);
+		return tweetMapper.toTweetDtos(feed);
+	}
+	
+	/*public List<TweetDto> getFeed(String username){
 		
+		User user = userRepository.findby_username(username);
+		List<Tweet> userFeed = new ArrayList<>();
+		for(User f : user.getFollowing()) {
+			userFeed.addAll(f.getAllTweets());
+		}
+		return userFeed.stream().map(tweetMapper::toTweetDto).collect(Collectors.toList());	
+	
+	}*/
+
+	public List<TweetDto> getTweets(String userName) {
+		User user = userRepository.findByUserName(userName);
+		List<Tweet> tweets = tweetRepository.findByAuthorAndDeleted(user, false);
+		return tweetMapper.toTweetDtos(tweets);
 	}
 
-
-	public List<TweetDto> getTweets(String username){
-		List<Tweet> allTweets = userRepository.findby_username(username).getAllTweets();
-		return allTweets.stream().map(tweetMapper :: toTweetDto).collect(Collectors.toList());
-		
+	public List<TweetDto> getMentions(String userName) {
+		User user = userRepository.findByUserName(userName);
+		List<Tweet> tweets = tweetRepository.findByMentionedByAndDeleted(user, false);
+		return tweetMapper.toTweetDtos(tweets);
 	}
-
-
-	public List<Tweet> getMentions(String username){
-		
-			User user = userRepository.findby_username(username);
-			return user.getMentions();
-		
-	}
-
-
-	public List<UserDto> getFollowers(String username){
-			User user = userRepository.findby_username(username);
-			return user.getFollowers().stream().map(userMapper :: toUserDto).collect(Collectors.toList());
-		
-	}
-
-
-	public List<UserDto> getFollowing(String username){
-			User user = userRepository.findby_username(username);
-			return user.getFollowing().stream().map(userMapper :: toUserDto).collect(Collectors.toList());
-	}
-
 	
 }

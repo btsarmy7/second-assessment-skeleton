@@ -1,110 +1,194 @@
 package com.cooksys.twitter.controller;
 
+
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.cooksys.twitter.Dto.HashtagDto;
-import com.cooksys.twitter.Dto.TweetDto;
-import com.cooksys.twitter.Dto.UserDto;
+import com.cooksys.twitter.dto.UserDto;
+import com.cooksys.twitter.dto.HashtagDto;
+import com.cooksys.twitter.dto.TweetDto;
+import com.cooksys.twitter.embedded.Context;
 import com.cooksys.twitter.embedded.Credentials;
-import com.cooksys.twitter.embedded.TweetInfo;
-import com.cooksys.twitter.entity.Context;
-import com.cooksys.twitter.entity.Tweet;
-import com.cooksys.twitter.repository.TweetRepository;
+import com.cooksys.twitter.embedded.TweetData;
+import com.cooksys.twitter.mapper.TweetMapper;
 import com.cooksys.twitter.repository.UserRepository;
+import com.cooksys.twitter.repository.HashtagRepository;
+import com.cooksys.twitter.repository.TweetRepository;
+import com.cooksys.twitter.service.UserService;
+import com.cooksys.twitter.service.HashtagService;
 import com.cooksys.twitter.service.TweetService;
 
 @RestController
 @RequestMapping("tweets")
 public class TweetController {
-	
+
 	private TweetService tweetService;
-	private TweetRepository tweetRepository;
+	private UserController userController;
+
 	
-	public TweetController(TweetService tweetService, UserRepository userRespository, TweetRepository tweetRepository) {
+
+	public TweetController(TweetService tweetService, UserController userController) {
 		this.tweetService = tweetService;
-		this.tweetRepository = tweetRepository;
+		this.userController = userController;
 	}
-	
+
 	@GetMapping
+	public List<TweetDto> getTweets(){
+		return tweetService.getTweets();
+	}
+	/*@GetMapping
 	public List<TweetDto> getAllTweets(){
-		return tweetService.getAllTweets();
-	}
-	
+		return tweetService.getAll();
+	}*/
+
 	@PostMapping
-	public TweetDto postTweet(@RequestBody TweetInfo tweetInfo, HttpServletResponse response){
-		if(tweetInfo.getContent() == null) {
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+	public TweetDto postTweet(@RequestBody TweetData tweetData, HttpServletResponse response){
+		if (tweetData.getContent() == null || tweetData.getContent().equals("")){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
-		return tweetService.postNewTweet(tweetInfo.getContent(), tweetInfo.getCredentials());
+
+		return tweetService.createSimpleTweet(tweetData);
 	}
-	
+
 	@GetMapping("/{id}")
-	public TweetDto getTweet(@PathVariable String id, HttpServletResponse response) {
-		Tweet tweet = tweetRepository.findByIdAndDeletedFalse(Integer.parseInt(id));
-		if(tweet == null) {
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+	public TweetDto getTweetById(@RequestParam Integer id, HttpServletResponse response){
+		TweetDto tweetDto = tweetService.getTweetById(id);
+		if (tweetDto == null){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
-		return tweetService.getTweet(Integer.parseInt(id));
+		return tweetDto;
 	}
-	
-	//delete tweet
+
 	@DeleteMapping("/{id}")
-	public TweetDto deleteTweet(@PathVariable Integer id, @RequestBody Credentials credentials, HttpServletResponse response){
-		if(tweetRepository.findByIdAndDeletedFalse(id) == null) {
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+	public TweetDto deleteTweetById(@RequestParam Integer id, HttpServletResponse response){
+		TweetDto tweetDto = tweetService.deleteTweetById(id);
+		if (tweetDto == null){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
-		return tweetService.deleteUserTweet(id, credentials);		
+		return tweetDto;
 	}
-	
+	//delete tweet
+		/*@DeleteMapping("/{id}")
+		public TweetDto deleteTweet(@PathVariable Integer id, @RequestBody Credentials credentials, HttpServletResponse response){
+			if(tweetRepository.findByIdAndDeletedFalse(id) == null) {
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				return null;
+			}
+			return tweetService.deleteUserTweet(id, credentials);		
+		}*/
+
+
 	@PostMapping("/{id}/like")
-	public void likeTweet(@PathVariable Integer id, @RequestBody Credentials credentials, HttpServletResponse response){
-		if(tweetRepository.findByIdAndDeletedFalse(id) == null) {
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+	public void like(@RequestParam Integer id, @RequestBody Credentials credentials, HttpServletResponse response){
+		if (!userController.validUser(credentials) || !tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return;
 		}
-		tweetService.likedTweets(id, credentials);
+		tweetService.like(id, credentials.getUserLogin());
+	}
+
+	@PostMapping("/{id}/reply")
+	public TweetDto replyTo(@RequestParam Integer id, @RequestBody TweetData tweetData, HttpServletResponse response){
+		if (!userController.validUser(tweetData.getCredentials()) || !tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return null;
+		}
+		if (tweetData.getContent() == null || tweetData.getContent().equals("")){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return null;
+		}
+		return tweetService.replyTo(id, tweetData);
 	}
 	
-	@PostMapping("/{id}/reply")
+
+	/*@PostMapping("/{id}/reply")
 	public TweetDto replyTweet(@PathVariable Integer id, @RequestBody TweetInfo tweetInfo, HttpServletResponse response){
 		if(tweetRepository.findByIdAndDeletedFalse(id) == null) {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			return null;
 		}
 		return tweetService.reply(id, tweetInfo.getContent(), tweetInfo.getCredentials());
-	}
-	
+	}*/
+
 	@PostMapping("/{id}/repost")
-	public TweetDto repostTweet(@PathVariable Integer id, @RequestBody Credentials credentials, HttpServletResponse response) {
-		if(tweetRepository.findByIdAndDeletedFalse(id) == null) {
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+	public TweetDto repost(@RequestParam Integer id, @RequestBody Credentials credentials, HttpServletResponse response){
+		if (!userController.validUser(credentials) || !tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
-		return tweetService.repostTweet(id, credentials);
+		return tweetService.repost(id, credentials.getUserLogin());
 	}
-	
-	@GetMapping("/{id}/tags")
-	public List<HashtagDto> userTaggedTweet(@PathVariable Integer id, HttpServletResponse response){
-		if(tweetRepository.findByIdAndDeletedFalse(id) == null) {
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+
+	@GetMapping("{id}/tags")
+	public Set<HashtagDto> getTags(@RequestParam Integer id, HttpServletResponse response){
+		if (!tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
-		return tweetService.userTaggedTweets(id);
+		return tweetService.getTagsByTweet(id);
 	}
-	
+
 	@GetMapping("/{id}/likes")
+	public Set<UserDto> getLikes(@RequestParam Integer id, HttpServletResponse response){
+		if (!tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return null;
+		}
+		return tweetService.getLikesByTweet(id);
+	}
+
+	@GetMapping("/{id}/context")
+	public Context getContext(@RequestParam Integer id, HttpServletResponse response){
+		if (!tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return null;
+		}
+		return tweetService.getContext(id);
+	}
+
+	@GetMapping("/{id}/replies")
+	public List<TweetDto> getReplies(@RequestParam Integer id, HttpServletResponse response){
+		if (!tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return null;
+		}
+
+		return tweetService.getRepliesByTweet(id);
+	}
+
+	@GetMapping("/{id}/reposts")
+	public List<TweetDto> getReposts(@RequestParam Integer id, HttpServletResponse response){
+		if (!tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return null;
+		}
+
+		return tweetService.getRepostsByTweet(id);
+	}
+
+	@GetMapping("/{id}/mentions")
+	public List<UserDto> getMentions(@RequestParam Integer id, HttpServletResponse response){
+		if (!tweetService.tweetExists(id)){
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return null;
+		}
+		return tweetService.getMentionsByTweet(id);
+	}
+	
+	/*@GetMapping("/{id}/likes")
 	public List<UserDto> usersLiked(@PathVariable Integer id, HttpServletResponse response) {
 		if(tweetRepository.findByIdAndDeletedFalse(id) == null) {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -147,6 +231,5 @@ public class TweetController {
 			return null;
 		}
 		return tweetService.userMentions(id);
-	}
-
+	}*/
 }

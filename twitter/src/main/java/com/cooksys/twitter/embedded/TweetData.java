@@ -1,15 +1,16 @@
 package com.cooksys.twitter.embedded;
 
-public class TweetInfo {
-	
+public class TweetData {
+
 	private String content;
+
 	private Credentials credentials;
+
+	public TweetData() {
 	
-	public TweetInfo() {
-		
 	}
 
-	public TweetInfo(String content, Credentials credentials) {
+	public TweetData(String content, Credentials credentials) {
 		this.content = content;
 		this.credentials = credentials;
 	}
@@ -41,30 +42,38 @@ public class TweetInfo {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (!(obj instanceof TweetData)) {
 			return false;
-		TweetInfo other = (TweetInfo) obj;
+		}
+		TweetData other = (TweetData) obj;
 		if (content == null) {
-			if (other.content != null)
+			if (other.content != null) {
 				return false;
-		} else if (!content.equals(other.content))
+			}
+		} else if (!content.equals(other.content)) {
 			return false;
+		}
 		if (credentials == null) {
-			if (other.credentials != null)
+			if (other.credentials != null) {
 				return false;
-		} else if (!credentials.equals(other.credentials))
+			}
+		} else if (!credentials.equals(other.credentials)) {
 			return false;
+		}
 		return true;
 	}
 
 	@Override
 	public String toString() {
-		return "TweetInfo [content=" + content + ", credentials=" + credentials + "]";
+		return "TweetData [content=" + content + ", credentials=" + credentials + "]";
 	}
-	
-	
+
+
+
 }
