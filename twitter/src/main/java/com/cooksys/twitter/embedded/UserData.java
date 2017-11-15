@@ -11,6 +11,10 @@ public class UserData {
 
 	@Embedded
 	private Profile profile;
+	
+	public UserData() {
+		
+	}
 
 	public Credentials getCredentials() {
 		return credentials;

@@ -11,6 +11,9 @@ public class Context {
 	private List<TweetDto> before = new ArrayList<TweetDto>();
 	private List<TweetDto> after = new ArrayList<TweetDto>();
 
+	public Context() {
+		
+	}
 	public Context(TweetDto target) {
 		this.target = target;
 	}

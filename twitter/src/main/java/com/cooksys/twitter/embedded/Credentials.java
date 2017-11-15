@@ -8,6 +8,10 @@ public class Credentials {
 	private String userLogin;
 	private String password;
 	
+	public Credentials() {
+		
+	}
+	
 	public Credentials(String userLogin, String password) {
 		this.userLogin = userLogin;
 		this.password = password;

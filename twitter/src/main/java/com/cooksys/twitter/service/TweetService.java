@@ -20,6 +20,7 @@ import com.cooksys.twitter.dto.TweetDto;
 import com.cooksys.twitter.embedded.Context;
 import com.cooksys.twitter.embedded.TweetData;
 import com.cooksys.twitter.entity.User;
+import com.cooksys.twitter.exceptions.InvalidIdException;
 import com.cooksys.twitter.entity.Hashtag;
 import com.cooksys.twitter.entity.Tweet;
 import com.cooksys.twitter.mapper.UserMapper;
@@ -55,7 +56,7 @@ public class TweetService {
 	}
 
 	@Transactional
-	public TweetDto createSimpleTweet(TweetData simpleTweetData){
+	public TweetDto createSimpleTweet(TweetData simpleTweetData) throws InvalidIdException{
 		User author= userRepository.findByUserName(simpleTweetData.getCredentials().getUserLogin());
 		String content = simpleTweetData.getContent();
 		Tweet tweet = new Tweet(false);
@@ -179,8 +180,7 @@ public class TweetService {
 		String userName;
 		User usr;
 		Pattern p = Pattern.compile("@\\w*");
-		Matcher m = p.matcher(content);
-		
+		Matcher m = p.matcher(content);		
 		while(m.find()){
 			userName = m.group().substring(1);
 			if (userController.validUser(userName)){
@@ -248,18 +248,19 @@ public class TweetService {
 	}
 
 	public Context getContext(Integer id) {
-		Tweet found;
+		
 		Tweet target = tweetRepository.findById(id);
 		Tweet tweet = target;
 		Context context = new Context(tweetMapper.toTweetDto(target));
-
-		// Find the before tweets
 		ArrayList<Tweet> before = new ArrayList<Tweet>();
+		ArrayList<Tweet> after = new ArrayList<Tweet>();
+		// Find before tweets
+		Tweet t = null;
 		while (tweet.getInReplyTo() != null){
-			found = tweet.getInReplyTo();
-			if (!found.isDeleted())
-				before.add(found);
-			tweet = found;
+				t = tweet.getInReplyTo();
+			if (!t.isDeleted())
+				before.add(t);
+			tweet = t;
 		}
 		// Sort by timestamp
 		Comparator<Tweet> compareTweets = new Comparator<Tweet>(){
@@ -271,9 +272,7 @@ public class TweetService {
 		context.setBefore(tweetMapper.toTweetDtos(before));
 
 		// look through after tweets
-		ArrayList<Tweet> after = new ArrayList<Tweet>();
 		tweetsAfter(target, after);
-		
 		Collections.sort(after, compareTweets);
 		context.setAfter(tweetMapper.toTweetDtos(after));
 		return context;

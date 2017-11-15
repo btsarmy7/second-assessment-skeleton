@@ -9,6 +9,10 @@ public class Profile {
 	  private String lastName;
 	  private String email;
 	  private String phone;
+	  
+	  public Profile() {
+		  
+	  }
 
 	public String getFirstName() {
 		return firstName;

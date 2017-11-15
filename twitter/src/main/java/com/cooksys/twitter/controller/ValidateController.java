@@ -58,25 +58,22 @@ public class ValidateController {
 		return false;
 	}
 
-	@PostMapping("/setup")
-	public String setupData(HttpServletResponse response){
-		String completeMessage = "";
+	@PostMapping("/test")
+	public void testData(HttpServletResponse response){
+		
 		hashtagService.create("whereIsBangtan");
 		hashtagService.create("RM");
 		hashtagService.create("BTSAMAs");
-		completeMessage += "Tag setup completed\n";
 		
 		Credentials jjk = new Credentials("kookie", "overwatch");
 		Credentials kth = new Credentials("vante", "photography");
 		Credentials pjm = new Credentials("chimchim", "calicoCat");
 		Credentials jhs = new Credentials("jayhope", "hobi");
 		
-		
 		Profile p1 = new Profile();
 		Profile p2 = new Profile();
 		Profile p3 = new Profile();
 		Profile p4 = new Profile();
-	
 
 		p1.setEmail("kookie@gmail.com");
 		p1.setFirstName("Jungkook");
@@ -94,17 +91,13 @@ public class ValidateController {
 		p4.setFirstName("Hoseok");
 		p4.setLastName("Jung");
 		p4.setPhone("1658745314");
-	
-
 
 		userService.create(true, jjk, p1);
 		userService.create(pjm, p2);
 		userService.create(kth, p3);
 		userService.create(true, jhs, p4);
 		
-		completeMessage += "User setup completed\n";
 
-		return completeMessage;
 	}
 
 }

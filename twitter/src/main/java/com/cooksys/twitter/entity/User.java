@@ -27,7 +27,7 @@ public class User {
 
 	private String userName;
 
-	private boolean deleted;
+	private boolean deleted; // true if user is "deleted"
 
 	private Timestamp joined;
 

@@ -1,10 +1,7 @@
 package com.cooksys.twitter.dto;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
 
-import com.cooksys.twitter.entity.User;
-import com.cooksys.twitter.entity.Tweet;
 
 public class TweetDto {
 

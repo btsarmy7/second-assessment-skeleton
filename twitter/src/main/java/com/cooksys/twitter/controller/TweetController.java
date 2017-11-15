@@ -1,6 +1,7 @@
 package com.cooksys.twitter.controller;
 
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -20,12 +21,7 @@ import com.cooksys.twitter.dto.TweetDto;
 import com.cooksys.twitter.embedded.Context;
 import com.cooksys.twitter.embedded.Credentials;
 import com.cooksys.twitter.embedded.TweetData;
-import com.cooksys.twitter.mapper.TweetMapper;
-import com.cooksys.twitter.repository.UserRepository;
-import com.cooksys.twitter.repository.HashtagRepository;
-import com.cooksys.twitter.repository.TweetRepository;
-import com.cooksys.twitter.service.UserService;
-import com.cooksys.twitter.service.HashtagService;
+import com.cooksys.twitter.exceptions.InvalidIdException;
 import com.cooksys.twitter.service.TweetService;
 
 @RestController
@@ -52,33 +48,52 @@ public class TweetController {
 	}*/
 
 	@PostMapping
-	public TweetDto postTweet(@RequestBody TweetData tweetData, HttpServletResponse response){
-		if (tweetData.getContent() == null || tweetData.getContent().equals("")){
+	public TweetDto postTweet(@RequestBody TweetData tweetData, HttpServletResponse response) throws IOException{
+		try {
+				return tweetService.createSimpleTweet(tweetData);
+			} catch( InvalidIdException e ) {
+				response.sendError(e.BAD_REQ, "Invalid Tweet Data");
+				return null;
+			}
+		}
+		/*if (tweetData.getContent() == null || tweetData.getContent().equals("")){
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 
-		return tweetService.createSimpleTweet(tweetData);
-	}
+		return tweetService.createSimpleTweet(tweetData);*/
+
 
 	@GetMapping("/{id}")
-	public TweetDto getTweetById(@RequestParam Integer id, HttpServletResponse response){
+	public TweetDto getTweetById(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		TweetDto tweetDto = tweetService.getTweetById(id);
+		if (tweetDto == null){
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id: " + id);
+			return null;
+		}
+		return tweetDto;
+		/*TweetDto tweetDto = tweetService.getTweetById(id);
 		if (tweetDto == null){
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
-		return tweetDto;
+		return tweetDto;*/
 	}
 
 	@DeleteMapping("/{id}")
-	public TweetDto deleteTweetById(@RequestParam Integer id, HttpServletResponse response){
+	public TweetDto deleteTweetById(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		TweetDto tweetDto = tweetService.deleteTweetById(id);
+		if (tweetDto == null){
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id: " + id + " , to delete");
+			return null;
+		}
+		return tweetDto;
+		/*TweetDto tweetDto = tweetService.deleteTweetById(id);
 		if (tweetDto == null){
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
-		return tweetDto;
+		return tweetDto;*/
 	}
 	//delete tweet
 		/*@DeleteMapping("/{id}")
@@ -92,22 +107,25 @@ public class TweetController {
 
 
 	@PostMapping("/{id}/like")
-	public void like(@RequestParam Integer id, @RequestBody Credentials credentials, HttpServletResponse response){
+	public void like(@RequestParam Integer id, @RequestBody Credentials credentials, HttpServletResponse response) throws IOException{
 		if (!userController.validUser(credentials) || !tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Either user is invalid or tweet does not exist");
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return;
 		}
 		tweetService.like(id, credentials.getUserLogin());
 	}
 
 	@PostMapping("/{id}/reply")
-	public TweetDto replyTo(@RequestParam Integer id, @RequestBody TweetData tweetData, HttpServletResponse response){
+	public TweetDto replyTo(@RequestParam Integer id, @RequestBody TweetData tweetData, HttpServletResponse response) throws IOException{
 		if (!userController.validUser(tweetData.getCredentials()) || !tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Either user is invalid or tweet does not exist");
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		if (tweetData.getContent() == null || tweetData.getContent().equals("")){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Tweet cannot be null");
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		return tweetService.replyTo(id, tweetData);
@@ -124,45 +142,50 @@ public class TweetController {
 	}*/
 
 	@PostMapping("/{id}/repost")
-	public TweetDto repost(@RequestParam Integer id, @RequestBody Credentials credentials, HttpServletResponse response){
+	public TweetDto repost(@RequestParam Integer id, @RequestBody Credentials credentials, HttpServletResponse response) throws IOException{
 		if (!userController.validUser(credentials) || !tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Either user is invalid or tweet does not exist");
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		return tweetService.repost(id, credentials.getUserLogin());
 	}
 
 	@GetMapping("{id}/tags")
-	public Set<HashtagDto> getTags(@RequestParam Integer id, HttpServletResponse response){
+	public Set<HashtagDto> getTags(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		if (!tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id " + id);
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		return tweetService.getTagsByTweet(id);
 	}
 
 	@GetMapping("/{id}/likes")
-	public Set<UserDto> getLikes(@RequestParam Integer id, HttpServletResponse response){
+	public Set<UserDto> getLikes(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		if (!tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id " + id);
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		return tweetService.getLikesByTweet(id);
 	}
 
 	@GetMapping("/{id}/context")
-	public Context getContext(@RequestParam Integer id, HttpServletResponse response){
+	public Context getContext(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		if (!tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id " + id);
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		return tweetService.getContext(id);
 	}
 
 	@GetMapping("/{id}/replies")
-	public List<TweetDto> getReplies(@RequestParam Integer id, HttpServletResponse response){
+	public List<TweetDto> getReplies(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		if (!tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id " + id);
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 
@@ -170,9 +193,10 @@ public class TweetController {
 	}
 
 	@GetMapping("/{id}/reposts")
-	public List<TweetDto> getReposts(@RequestParam Integer id, HttpServletResponse response){
+	public List<TweetDto> getReposts(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		if (!tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id " + id);
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 
@@ -180,9 +204,10 @@ public class TweetController {
 	}
 
 	@GetMapping("/{id}/mentions")
-	public List<UserDto> getMentions(@RequestParam Integer id, HttpServletResponse response){
+	public List<UserDto> getMentions(@RequestParam Integer id, HttpServletResponse response) throws IOException{
 		if (!tweetService.tweetExists(id)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find tweet id " + id);
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		return tweetService.getMentionsByTweet(id);

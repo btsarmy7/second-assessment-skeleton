@@ -1,5 +1,6 @@
 package com.cooksys.twitter.controller;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -17,9 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cooksys.twitter.dto.UserDto;
 import com.cooksys.twitter.dto.TweetDto;
 import com.cooksys.twitter.embedded.UserData;
-import com.cooksys.twitter.mapper.UserMapper;
 import com.cooksys.twitter.embedded.Credentials;
-import com.cooksys.twitter.repository.UserRepository;
 import com.cooksys.twitter.service.UserService;
 
 @RestController
@@ -28,9 +27,7 @@ public class UserController {
 
 	private UserService userService;
 
-
 	public UserController(UserService userService) {
-		super();
 		this.userService = userService;
 	}
 
@@ -43,9 +40,10 @@ public class UserController {
 	}
 
 	@PostMapping
-	public UserDto createUser(@RequestBody UserData userData, HttpServletResponse response){
+	public UserDto createUser(@RequestBody UserData userData, HttpServletResponse response) throws IOException{
 		if (!validUserData(userData)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid user data");
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 		UserDto userDto = userService.findByUserName(userData.getUserName());
@@ -70,9 +68,10 @@ public class UserController {
 	}
 
 	@PatchMapping("/@{userName}")
-	public UserDto updateUserProfile(@RequestBody UserData userData, HttpServletResponse response){
+	public UserDto updateUserProfile(@RequestBody UserData userData, HttpServletResponse response) throws IOException{
 		if (!validUserData(userData)){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid user data");
+			//response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			return null;
 		}
 
@@ -102,6 +101,7 @@ public class UserController {
 
 	@PostMapping("/@{userName}/follow")
 	public void followUser(@RequestParam String userName, @RequestBody Credentials followerCred, HttpServletResponse response){
+		// cannot follow if credentials are not valid, user to follow does not exist, or follower is deleted
 		if (!validUser(followerCred) || !validUser(userName)){
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			return;
